@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    function checkOptionalString(data, field) {
+      return !data.keys().hasAny([field]) || (data[field] is string && data[field].size() <= 1000000);
+    }
+    
+    function checkOptionalNumber(data, field) {
+      return !data.keys().hasAny([field]) || data[field] is number;
+    }
+
+    function isValidTrade(data, uid) {
+      return data.keys().hasAll(['userId', 'pair', 'outcome', 'date', 'position']) &&
+             data.userId == uid &&
+             data.pair is string && data.pair.size() > 0 && data.pair.size() <= 50 &&
+             data.outcome in ['WIN', 'LOSS', 'BREAKEVEN'] &&
+             data.date is string && data.date.size() <= 50 &&
+             data.position in ['Long', 'Short'] &&
+             checkOptionalString(data, 'strategy') &&
+             checkOptionalNumber(data, 'pnlPercentage') &&
+             checkOptionalNumber(data, 'pnlAmount') &&
+             checkOptionalString(data, 'imageUrl') &&
+             checkOptionalNumber(data, 'entryPrice') &&
+             checkOptionalNumber(data, 'exitPrice') &&
+             checkOptionalNumber(data, 'takeProfit') &&
+             checkOptionalNumber(data, 'stopLoss') &&
+             checkOptionalNumber(data, 'volume') &&
+             checkOptionalString(data, 'ticket') &&
+             checkOptionalString(data, 'notes');
+    }
+
+    function isValidUser(data) {
+      // Validate user document creation/update
+      return checkOptionalString(data, 'firstName') &&
+             checkOptionalString(data, 'lastName') &&
+             checkOptionalString(data, 'email') &&
+             checkOptionalString(data, 'dateOfBirth') &&
+             (!data.keys().hasAny(['createdAt']) || data.createdAt is string);
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow set, create, update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming());
+      
+      match /trades/{tradeId} {
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
+      allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      
+      allow create: if isSignedIn() && 
+                    request.auth.uid == userId && 
+                    isValidId(userId) && isValidId(tradeId) &&
+                    isValidTrade(incoming(), userId) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() && 
+                    request.auth.uid == userId && 
+                    isValidId(userId) && isValidId(tradeId) &&
+                    isValidTrade(incoming(), userId) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    incoming().diff(existing()).affectedKeys().hasOnly([
+                      'pair', 'outcome', 'date', 'position', 'strategy', 'pnlPercentage', 
+                      'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'takeProfit', 'stopLoss', 
+                      'volume', 'ticket', 'notes', 'updatedAt'
+                    ]);
+
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
+      }
+    }
+  }
+}

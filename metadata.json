@@ -1,0 +1,6 @@
+{
+  "name": "Trading Journal",
+  "description": "A trading journaling web app to track backtesting results, win rates, and analyze trade images.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
