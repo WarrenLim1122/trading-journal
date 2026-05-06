@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "Trade": {
+      "title": "Trade",
+      "description": "A single trading journal entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pair": { "type": "string" },
+        "outcome": { "type": "string", "enum": ["WIN", "LOSS", "BREAKEVEN"] },
+        "date": { "type": "string" },
+        "position": { "type": "string", "enum": ["Long", "Short"] },
+        "strategy": { "type": "string" },
+        "pnlPercentage": { "type": "number" },
+        "pnlAmount": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "entryPrice": { "type": "number" },
+        "exitPrice": { "type": "number" },
+        "takeProfit": { "type": "number" },
+        "stopLoss": { "type": "number" },
+        "volume": { "type": "number" },
+        "ticket": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["userId", "pair", "outcome", "date", "position", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/trades/{tradeId}": {
+      "schema": { "$ref": "#/entities/Trade" },
+      "description": "Trading journal entries for a specific user"
+    }
+  }
+}
