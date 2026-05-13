@@ -158,7 +158,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                     if (cr === "SL")        return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#ef4444]">🛑 SL</span>;
                     if (cr === "NEWS")      return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#f59e0b]">📰 News</span>;
                     if (cr === "MANUAL")    return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">✋ Manual</span>;
-                    if (cr === "BOT_LOGIC") return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#a855f7]">🤖 Bot</span>;
+                    if (cr === "BOT_LOGIC") return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">✋ Manual</span>;
                     if (cr === "EXPIRED")   return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">⏰ Expired</span>;
                     if (cr === "UNKNOWN")   return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">❓ Unknown</span>;
                     return <span className="font-mono text-muted-foreground">—</span>;

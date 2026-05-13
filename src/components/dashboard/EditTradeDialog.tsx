@@ -64,7 +64,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onTradeEdited, trad
       );
       setPnlAmount(trade.pnlAmount !== undefined ? String(trade.pnlAmount) : "");
       setVolume(trade.volume !== undefined ? String(trade.volume) : "");
-      setTicket(trade.ticket || "");
+      setTicket(trade.ticket !== undefined ? String(trade.ticket) : "");
       setCloseReason(
         (trade.closeReason === "TP" || trade.closeReason === "SL" ||
          trade.closeReason === "NEWS" || trade.closeReason === "MANUAL")

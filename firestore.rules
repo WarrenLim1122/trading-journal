@@ -64,17 +64,18 @@ service cloud.firestore {
                     incoming().createdAt == request.time &&
                     incoming().updatedAt == request.time;
 
-      allow update: if isSignedIn() && 
-                    request.auth.uid == userId && 
+      allow update: if isSignedIn() &&
+                    request.auth.uid == userId &&
                     isValidId(userId) && isValidId(tradeId) &&
                     isValidTrade(incoming(), userId) &&
                     incoming().userId == existing().userId &&
                     incoming().createdAt == existing().createdAt &&
                     incoming().updatedAt == request.time &&
                     incoming().diff(existing()).affectedKeys().hasOnly([
-                      'pair', 'outcome', 'date', 'position', 'strategy', 'pnlPercentage', 
-                      'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'takeProfit', 'stopLoss', 
-                      'volume', 'ticket', 'notes', 'updatedAt'
+                      'pair', 'outcome', 'date', 'position', 'strategy', 'pnlPercentage',
+                      'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'takeProfit', 'stopLoss',
+                      'volume', 'ticket', 'notes', 'updatedAt',
+                      'closeReason'
                     ]);
 
       allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
