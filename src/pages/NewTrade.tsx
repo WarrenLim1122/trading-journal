@@ -31,8 +31,11 @@ export function NewTrade() {
   const [entryPrice, setEntryPrice] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
+  const [closePrice, setClosePrice] = useState("");
   const [pnlAmount, setPnlAmount] = useState("");
   const [volume, setVolume] = useState("");
+  const [ticket, setTicket] = useState("");
+  const [closeReason, setCloseReason] = useState<"TP" | "SL" | "NEWS" | "MANUAL" | "">("");
   const [imageBase64, setImageBase64] = useState<string>("");
 
   useEffect(() => {
@@ -143,6 +146,8 @@ export function NewTrade() {
       dateObj = new Date();
     }
 
+    const cpPrice = closePrice !== "" ? parseFloat(closePrice) : undefined;
+
     try {
       await tradeService.addTrade(user.uid, {
         pair: pair.toUpperCase(),
@@ -154,14 +159,17 @@ export function NewTrade() {
         entryPrice: ePrice,
         takeProfit: tpPrice,
         stopLoss: slPrice,
+        closePrice: cpPrice,
         volume: vol,
         isAutoCalculated: pnlAmount === "",
         pnlPercentage: calcPnlPercentage,
         pnlAmount: finalPnlAmount,
         imageUrl: imageBase64 || undefined,
+        ticket: ticket || undefined,
+        closeReason: closeReason || undefined,
       });
       // Redirect to Dashboard after saving
-      navigate("/");
+      navigate("/journal/dashboard");
     } catch (e) {
       console.error(e);
       alert("Failed to create trade. Sometimes this happens if an image is too large even after compression.");
@@ -173,6 +181,12 @@ export function NewTrade() {
   return (
     <div className="mx-auto max-w-3xl pb-24">
       <header className="mb-8">
+        <button
+          onClick={() => navigate("/journal/dashboard")}
+          className="mb-4 inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-white transition-colors border border-border hover:border-white/30 rounded-lg px-3 py-1.5"
+        >
+          ← Dashboard
+        </button>
         <h1 className="text-3xl font-bold font-mono tracking-tight text-white flex items-center gap-3">
           <PlusCircle className="h-8 w-8 text-primary shrink-0" />
           <span>Log a New Trade</span>
@@ -322,6 +336,29 @@ export function NewTrade() {
              <div className="space-y-2">
                <Label htmlFor="takeProfit">Take Profit Price</Label>
                <Input id="takeProfit" type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-border/50">
+             <div className="space-y-2 flex flex-col">
+               <Label htmlFor="closeReason">Exit Reason (Optional)</Label>
+               <Select value={closeReason} onValueChange={(v) => setCloseReason(v as any)}>
+                 <SelectTrigger className="w-full"><SelectValue placeholder="How was this trade closed?" /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="TP">🎯 TP — Take Profit hit</SelectItem>
+                   <SelectItem value="SL">🛑 SL — Stop Loss hit</SelectItem>
+                   <SelectItem value="NEWS">📰 News — Closed before news event</SelectItem>
+                   <SelectItem value="MANUAL">✋ Manual — Closed manually</SelectItem>
+                 </SelectContent>
+               </Select>
+             </div>
+             <div className="space-y-2">
+               <Label htmlFor="closePrice">Close Price (Optional)</Label>
+               <Input id="closePrice" type="number" step="any" value={closePrice} onChange={(e) => setClosePrice(e.target.value)} placeholder="Actual exit price" />
+             </div>
+             <div className="space-y-2">
+               <Label htmlFor="ticket">Ticket / Order ID (Optional)</Label>
+               <Input id="ticket" type="text" value={ticket} onChange={(e) => setTicket(e.target.value)} placeholder="MT5 ticket number" />
              </div>
           </div>
 

@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Trade } from "../types/trade";
+import { Cashflow } from "../types/cashflow";
 import { tradeService } from "../lib/tradeService";
+import { cashflowService } from "../lib/cashflowService";
 import { ListOverview } from "../components/dashboard/ListOverview";
 import { ChartOverview } from "../components/dashboard/ChartOverview";
 import { WinsVsLosses } from "../components/dashboard/WinsVsLosses";
 import { CalendarView } from "../components/dashboard/CalendarView";
 import { EquityCurve } from "../components/dashboard/EquityCurve";
-import { Activity, LogOut, ArrowDownAZ, ArrowUpAZ, ArrowDown, ArrowUp, Filter, Pencil, Download, Plus } from "lucide-react";
+import { Filter, Download, Plus } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -24,8 +26,9 @@ import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeO
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [cashflows, setCashflows] = useState<Cashflow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("list");
+  const [activeSection, setActiveSection] = useState("charts");
 
   // Filter and Sort states
   const [filterPair, setFilterPair] = useState("");
@@ -63,11 +66,34 @@ export default function Dashboard() {
   const fetchTrades = async () => {
     if (user) {
       setLoading(true);
-      const data = await tradeService.getTrades(user.uid);
-      setTrades(data);
+      const [tradesData, cashflowsData] = await Promise.all([
+        tradeService.getTrades(user.uid),
+        cashflowService.getCashflows(user.uid),
+      ]);
+      setTrades(tradesData);
+      setCashflows(cashflowsData);
       setLoading(false);
     }
   };
+
+  // Refresh equity when cashflows change on the Cashflows page.
+  useEffect(() => {
+    const handler = async () => {
+      if (!user) return;
+      const cf = await cashflowService.getCashflows(user.uid);
+      setCashflows(cf);
+    };
+    window.addEventListener("cashflowsUpdated", handler);
+    return () => window.removeEventListener("cashflowsUpdated", handler);
+  }, [user]);
+
+  const netCashflow = useMemo(() => {
+    let net = 0;
+    cashflows.forEach(c => {
+      net += c.type === "deposit" ? c.amount : -c.amount;
+    });
+    return net;
+  }, [cashflows]);
 
   const filteredTrades = useMemo(() => {
     return trades
@@ -82,10 +108,8 @@ export default function Dashboard() {
            aVal = new Date(a.date).getTime();
            bVal = new Date(b.date).getTime();
         } else if (sortKey === 'pair') {
-           const aSymbol = getTradeSymbol(a);
-           const bSymbol = getTradeSymbol(b);
-           aVal = (aSymbol || "").toLowerCase();
-           bSymbol = (bSymbol || "").toLowerCase();
+           aVal = (getTradeSymbol(a) || "").toLowerCase();
+           bVal = (getTradeSymbol(b) || "").toLowerCase();
         }
         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
@@ -95,25 +119,24 @@ export default function Dashboard() {
 
   const { currentEquity, equityPercentChange } = useMemo(() => {
     const startNum = parseFloat(startBalance) || 0;
-    if (!filteredTrades || filteredTrades.length === 0) return { currentEquity: startNum, equityPercentChange: 0 };
-    
+
+    let tradingPnl = 0;
     const sortedTrades = [...filteredTrades].sort((a, b) => new Date(getTradeDate(a)).getTime() - new Date(getTradeDate(b)).getTime());
-    let balance = startNum;
-    
     sortedTrades.forEach(trade => {
-      // Prioritize pnlAmount if it exists. If not, calculate it based on pnlPercentage and startBalance.
-      // This ensures 100% parity with how the equity curve adds up trades when not compounding.
       const pnl = getTradePnl(trade);
-      const pnlAmt = pnl !== undefined 
-        ? pnl 
+      const pnlAmt = pnl !== undefined
+        ? pnl
         : (trade.pnlPercentage && startNum > 0 ? startNum * (trade.pnlPercentage / 100) : 0);
-      balance += pnlAmt;
+      tradingPnl += pnlAmt;
     });
 
-    const percentChange = startNum > 0 ? ((balance - startNum) / startNum) * 100 : 0;
-    
+    const balance = startNum + netCashflow + tradingPnl;
+    // % change measures trading performance on capital actually invested (start + deposits − withdrawals).
+    const investedCapital = startNum + netCashflow;
+    const percentChange = investedCapital > 0 ? (tradingPnl / investedCapital) * 100 : 0;
+
     return { currentEquity: balance, equityPercentChange: percentChange };
-  }, [filteredTrades, startBalance]);
+  }, [filteredTrades, startBalance, netCashflow]);
 
   const downloadCSV = () => {
     if (filteredTrades.length === 0) return;
@@ -123,7 +146,7 @@ export default function Dashboard() {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
       try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
-      
+
       const formattedDate = format(parsedDate, "yyyy-MM-dd");
       const formattedTime = format(parsedDate, "HH:mm");
       const pnlValue = getTradePnl(t);
@@ -158,9 +181,9 @@ export default function Dashboard() {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
       try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
-      
+
       const pnlValue = getTradePnl(t);
-      
+
       return [
         getTradeSymbol(t) || "",
         format(parsedDate, "yyyy-MM-dd"),
@@ -191,9 +214,9 @@ export default function Dashboard() {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
       try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
-      
+
       const pnlValue = getTradePnl(t);
-      
+
       return [
         getTradeSymbol(t) || "",
         format(parsedDate, "yyyy-MM-dd"),
@@ -227,7 +250,7 @@ export default function Dashboard() {
     else if (activeSection === 'wins') refToAnchor = winsRef;
 
     const offsetBefore = refToAnchor?.current?.getBoundingClientRect().top;
-    
+
     updateFn();
 
     if (refToAnchor && offsetBefore !== undefined) {
@@ -256,7 +279,6 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
-    // If current filter choices are no longer available in the trades list, reset them
     if (filterOutcome !== 'ALL') {
       const availableOutcomes = Array.from(new Set(trades.map(t => t.outcome))).filter(Boolean);
       if (!availableOutcomes.includes(filterOutcome as any)) {
@@ -279,13 +301,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Use getBoundingClientRect to calculate absolute distance from top
       const getPos = (ref: React.RefObject<HTMLDivElement>) => {
         return ref.current ? ref.current.getBoundingClientRect().top : Infinity;
       };
 
-      const offset = 200; // Trigger offset from the top of the viewport
-      
+      const offset = 200;
+
       const equityPos = getPos(equityRef);
       const winsPos = getPos(winsRef);
       const calendarPos = getPos(calendarRef);
@@ -305,7 +326,6 @@ export default function Dashboard() {
       }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
-    // Trigger initially
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -316,24 +336,37 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl relative">
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-        <div className="flex flex-col">
-          <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">Current Equity</span>
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
-              ${currentEquity.toFixed(2)}
-            </h1>
-            <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-               {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
-            </span>
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div className="flex flex-col">
+            <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">Current Equity</span>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
+                ${currentEquity.toFixed(2)}
+              </h1>
+              <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                 {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
+              </span>
+              {netCashflow !== 0 && (
+                <Link
+                  to="/journal/cashflows"
+                  className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border transition-colors ${
+                    netCashflow >= 0
+                      ? "border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10"
+                      : "border-[#ef4444]/40 text-[#ef4444] hover:bg-[#ef4444]/10"
+                  }`}
+                  title="Click to manage deposits and withdrawals"
+                >
+                  Net cashflow {netCashflow >= 0 ? "+" : "−"}${Math.abs(netCashflow).toFixed(2)}
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4 relative z-50">
-           <Button className="gap-2 shrink-0 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 font-mono transition-all hover:scale-105" onClick={() => navigate("/new-trade")}>
-             <Plus size={16} /> New Trade
-           </Button>
-        </div>
-      </header>
+          <div className="flex items-center gap-4 relative z-50">
+             <Button className="gap-2 shrink-0 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 font-mono transition-all hover:scale-105" onClick={() => navigate("/journal/new-trade")}>
+               <Plus size={16} /> New Trade
+             </Button>
+          </div>
+        </header>
 
         {loading ? (
           <div className="flex w-full items-center justify-center p-12">
@@ -349,85 +382,82 @@ export default function Dashboard() {
                  <Button variant={activeSection === "wins" ? "default" : "ghost"} size="sm" onClick={() => scrollTo(winsRef)}>Win Vs Lose</Button>
                  <Button variant={activeSection === "equity" ? "default" : "ghost"} size="sm" onClick={() => scrollTo(equityRef)}>Equity Curve</Button>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between">
-                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-start justify-between">
+                <div className="flex flex-wrap items-center gap-3 w-full">
                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Filter size={16} />
                       <span className="text-xs font-mono uppercase font-semibold">Filter:</span>
                    </div>
-                   <Select value={filterPair || 'ALL'} onValueChange={(val) => updateWithScrollRestoration(() => setFilterPair(val === 'ALL' ? '' : val))}>
-                     <SelectTrigger className="h-8 w-[130px] bg-black/40 text-xs font-mono">
-                       <SelectValue placeholder="All Pairs" />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="ALL">All Pairs</SelectItem>
-                       {Array.from(new Set(trades.map(t => t.pair?.toUpperCase()))).filter(Boolean).map(pair => (
-                         <SelectItem key={pair} value={pair as string}>{pair}</SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
-                   <Select value={filterOutcome} onValueChange={(val) => updateWithScrollRestoration(() => setFilterOutcome(val))}>
-                     <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
-                       <SelectValue placeholder="Outcome" />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="ALL">All Outcomes</SelectItem>
-                       {Array.from(new Set(trades.map(t => t.outcome))).filter(Boolean).map(outcome => (
-                         <SelectItem key={outcome} value={outcome}>
-                           {outcome === "BREAKEVEN" ? "Break Even" : outcome === "WIN" ? "Win" : "Lose"}
-                         </SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
-                   <Select value={filterPosition} onValueChange={(val) => updateWithScrollRestoration(() => setFilterPosition(val))}>
-                     <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
-                       <SelectValue placeholder="Position" />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="ALL">All Positions</SelectItem>
-                       {Array.from(new Set(trades.map(t => t.position))).filter(Boolean).map(position => (
-                         <SelectItem key={position} value={position}>{position}</SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
-                   <Select value={filterStrategy} onValueChange={(val) => updateWithScrollRestoration(() => setFilterStrategy(val))}>
-                     <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
-                       <SelectValue placeholder="Strategy" />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="ALL">All Strategies</SelectItem>
-                       {Array.from(new Set(trades.map(t => t.strategy))).filter(Boolean).map(strategy => (
-                         <SelectItem key={strategy as string} value={strategy as string}>{strategy}</SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                   <span className="text-xs text-muted-foreground font-mono uppercase font-semibold mr-1">Sort:</span>
-                   <Button variant={sortKey === 'date' ? 'secondary' : 'ghost'} size="sm" onClick={() => toggleSort('date')} className="h-8 text-xs font-mono">
-                     Date {sortKey === 'date' && (sortDirection === 'asc' ? <ArrowUp size={14} className="ml-1"/> : <ArrowDown size={14} className="ml-1"/>)}
-                   </Button>
-                   <Button variant={sortKey === 'pair' ? 'secondary' : 'ghost'} size="sm" onClick={() => toggleSort('pair')} className="h-8 text-xs font-mono">
-                     Pair {sortKey === 'pair' && (sortDirection === 'asc' ? <ArrowUpAZ size={14} className="ml-1"/> : <ArrowDownAZ size={14} className="ml-1"/>)}
-                   </Button>
-                   <Button variant={sortKey === 'outcome' ? 'secondary' : 'ghost'} size="sm" onClick={() => toggleSort('outcome')} className="h-8 text-xs font-mono">
-                     Outcome {sortKey === 'outcome' && (sortDirection === 'asc' ? <ArrowUp size={14} className="ml-1"/> : <ArrowDown size={14} className="ml-1"/>)}
-                   </Button>
-                   <Button variant={sortKey === 'position' ? 'secondary' : 'ghost'} size="sm" onClick={() => toggleSort('position')} className="h-8 text-xs font-mono">
-                     Position {sortKey === 'position' && (sortDirection === 'asc' ? <ArrowUp size={14} className="ml-1"/> : <ArrowDown size={14} className="ml-1"/>)}
-                   </Button>
+                   <div className="flex flex-col gap-0.5">
+                     <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Symbol</span>
+                     <Select value={filterPair || 'ALL'} onValueChange={(val) => updateWithScrollRestoration(() => setFilterPair(val === 'ALL' ? '' : val))}>
+                       <SelectTrigger className="h-8 w-[130px] bg-black/40 text-xs font-mono">
+                         <SelectValue placeholder="All" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="ALL">All Symbols</SelectItem>
+                         {Array.from(new Set(trades.map(t => t.pair?.toUpperCase()))).filter(Boolean).map(pair => (
+                           <SelectItem key={pair} value={pair as string}>{pair}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="flex flex-col gap-0.5">
+                     <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Outcome</span>
+                     <Select value={filterOutcome} onValueChange={(val) => updateWithScrollRestoration(() => setFilterOutcome(val))}>
+                       <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
+                         <SelectValue placeholder="All" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="ALL">All Outcomes</SelectItem>
+                         {Array.from(new Set(trades.map(t => t.outcome))).filter(Boolean).map(outcome => (
+                           <SelectItem key={outcome} value={outcome}>
+                             {outcome === "BREAKEVEN" ? "Break Even" : outcome === "WIN" ? "Win" : "Lose"}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="flex flex-col gap-0.5">
+                     <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Direction</span>
+                     <Select value={filterPosition} onValueChange={(val) => updateWithScrollRestoration(() => setFilterPosition(val))}>
+                       <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
+                         <SelectValue placeholder="All" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="ALL">All Directions</SelectItem>
+                         {Array.from(new Set(trades.map(t => t.position))).filter(Boolean).map(position => (
+                           <SelectItem key={position} value={position}>{position}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="flex flex-col gap-0.5">
+                     <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Strategy</span>
+                     <Select value={filterStrategy} onValueChange={(val) => updateWithScrollRestoration(() => setFilterStrategy(val))}>
+                       <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono">
+                         <SelectValue placeholder="All" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="ALL">All Strategies</SelectItem>
+                         {Array.from(new Set(trades.map(t => t.strategy))).filter(Boolean).map(strategy => (
+                           <SelectItem key={strategy as string} value={strategy as string}>{strategy}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
                 </div>
               </div>
             </div>
 
             <div ref={chartsRef} className="scroll-mt-40">
               <h2 className="text-4xl font-extrabold font-mono mb-8 text-white tracking-[0.2em] uppercase border-b border-border/50 pb-4">Chart Overview</h2>
-              <ChartOverview 
-                trades={filteredTrades} 
+              <ChartOverview
+                trades={filteredTrades}
                 startBalance={parseFloat(startBalance) || 1000}
-                selectedChartId={selectedChartId} 
-                onOpenChart={setSelectedChartId} 
-                onCloseChart={() => setSelectedChartId(null)} 
+                selectedChartId={selectedChartId}
+                onOpenChart={setSelectedChartId}
+                onCloseChart={() => setSelectedChartId(null)}
                 highlightedChartId={highlightedChartId}
                 onClearHighlight={() => {
                   if (highlightedChartId) setHighlightedChartId(null);
@@ -455,10 +485,17 @@ export default function Dashboard() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <ListOverview trades={filteredTrades} onTradeDeleted={fetchTrades} onRowClick={(id) => { 
-                const t = filteredTrades.find(trade => trade.id === id);
-                if (t) setSelectedTradeForDetail(t);
-              }} />
+              <ListOverview
+                trades={filteredTrades}
+                onTradeDeleted={fetchTrades}
+                onRowClick={(id) => {
+                  const t = filteredTrades.find(trade => trade.id === id);
+                  if (t) setSelectedTradeForDetail(t);
+                }}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+              />
             </div>
 
             <div ref={calendarRef} className="scroll-mt-40">
@@ -473,22 +510,22 @@ export default function Dashboard() {
 
             <div ref={equityRef} className="scroll-mt-40">
               <h2 className="text-4xl font-extrabold font-mono mb-8 text-white tracking-[0.2em] uppercase border-b border-border/50 pb-4">Equity Curve</h2>
-              <EquityCurve 
-                trades={filteredTrades} 
-                startingBalance={startBalance} 
-                setStartingBalance={setStartBalance} 
+              <EquityCurve
+                trades={filteredTrades}
+                startingBalance={startBalance}
+                setStartingBalance={setStartBalance}
               />
             </div>
           </div>
         )}
-        
-        <TradeDetailDialog 
-          trade={selectedTradeForDetail} 
-          open={!!selectedTradeForDetail} 
+
+        <TradeDetailDialog
+          trade={selectedTradeForDetail}
+          open={!!selectedTradeForDetail}
           onOpenChange={(open) => {
             if (!open) setSelectedTradeForDetail(null);
-          }} 
+          }}
         />
-      </div>
+    </div>
   );
 }

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Card, CardContent } from "../components/ui/card";
+import { Input } from "@journal/components/ui/input";
+import { Label } from "@journal/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@journal/components/ui/select";
+import { Card, CardContent } from "@journal/components/ui/card";
 import { Info, AlertCircle, RefreshCw } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { Button } from "@journal/components/ui/button";
 
 interface Preset {
   name: string;
@@ -27,7 +27,7 @@ export function RiskCalculator() {
   // Account
   const [accountEquity, setAccountEquity] = useState<string>("10000");
   const [riskMode, setRiskMode] = useState<"percent" | "fixed">("percent");
-  const [riskValue, setRiskValue] = useState<string>("1"); // 1% or $100
+  const [riskValue, setRiskValue] = useState<string>("1");
 
   // Trade Setup
   const [direction, setDirection] = useState<"long" | "short">("long");
@@ -54,7 +54,6 @@ export function RiskCalculator() {
     rr: number | null;
   } | null>(null);
 
-  // Update instrument configuration when preset changes
   useEffect(() => {
     if (presetKey !== "custom") {
       const preset = PRESETS[presetKey];
@@ -96,7 +95,7 @@ export function RiskCalculator() {
     if (ep === sl) {
       newWarnings.push("Stop Loss cannot equal Entry Price.");
     }
-    
+
     if (direction === "long") {
       if (sl > ep) newWarnings.push("For Long trades, Stop Loss should ideally be below Entry Price.");
       if (tp !== null && tp < ep) newWarnings.push("For Long trades, Take Profit should be above Entry Price.");
@@ -120,15 +119,12 @@ export function RiskCalculator() {
       }
     }
 
-    // Distance = absolute difference in price
     const slDistance = Math.abs(ep - sl);
     if (slDistance === 0) return;
 
-    // Lots = RiskAmount / (Distance * ContractSize)
     const rawLot = intendedRiskAmount / (slDistance * cSize);
-    
-    // Round to lot step
-    const invLs = 1 / ls; // e.g., if step is 0.01, invLs is 100
+
+    const invLs = 1 / ls;
     let roundedLot = Math.floor(rawLot * invLs) / invLs;
 
     if (roundedLot < ml) {
@@ -182,15 +178,15 @@ export function RiskCalculator() {
       </header>
 
       <div className="flex gap-4 mb-6">
-        <Button 
-          variant={activeTab === "calculator" ? "default" : "outline"} 
+        <Button
+          variant={activeTab === "calculator" ? "default" : "outline"}
           onClick={() => setActiveTab("calculator")}
           className="font-mono"
         >
           Calculator
         </Button>
-        <Button 
-          variant={activeTab === "guide" ? "default" : "outline"} 
+        <Button
+          variant={activeTab === "guide" ? "default" : "outline"}
           onClick={() => setActiveTab("guide")}
           className="font-mono"
         >
@@ -200,23 +196,17 @@ export function RiskCalculator() {
 
       {activeTab === "calculator" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Input Form */}
           <div className="lg:col-span-8 space-y-8">
-            {/* 1. Account Section */}
             <Card className="bg-card/50 border-border/50">
               <CardContent className="p-6">
                 <h2 className="text-lg font-bold font-mono text-white mb-4 flex items-center gap-2">
-                  <span className="bg-primary/20 text-primary p-1 rounded">1</span> 
+                  <span className="bg-primary/20 text-primary p-1 rounded">1</span>
                   Account Settings
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Account Equity ($)</Label>
-                    <Input 
-                      type="number" 
-                      value={accountEquity} 
-                      onChange={(e) => setAccountEquity(e.target.value)} 
-                    />
+                    <Input type="number" value={accountEquity} onChange={(e) => setAccountEquity(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-2">
@@ -231,22 +221,17 @@ export function RiskCalculator() {
                     </div>
                     <div className="space-y-2">
                       <Label>Value</Label>
-                      <Input 
-                        type="number" 
-                        value={riskValue} 
-                        onChange={(e) => setRiskValue(e.target.value)} 
-                      />
+                      <Input type="number" value={riskValue} onChange={(e) => setRiskValue(e.target.value)} />
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 2. Instrument Configuration */}
             <Card className="bg-card/50 border-border/50">
                <CardContent className="p-6">
                   <h2 className="text-lg font-bold font-mono text-white mb-4 flex items-center gap-2">
-                    <span className="bg-primary/20 text-primary p-1 rounded">2</span> 
+                    <span className="bg-primary/20 text-primary p-1 rounded">2</span>
                     Instrument Configuration
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -265,36 +250,15 @@ export function RiskCalculator() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Contract Size</Label>
-                      <Input 
-                        type="number" 
-                        value={contractSize} 
-                        onChange={(e) => {
-                          setContractSize(e.target.value);
-                          handleCustomInstrumentChange();
-                        }} 
-                      />
+                      <Input type="number" value={contractSize} onChange={(e) => { setContractSize(e.target.value); handleCustomInstrumentChange(); }} />
                     </div>
                     <div className="space-y-2">
                       <Label>Minimum Lot</Label>
-                      <Input 
-                        type="number" 
-                        value={minLot} 
-                        onChange={(e) => {
-                          setMinLot(e.target.value);
-                          handleCustomInstrumentChange();
-                        }} 
-                      />
+                      <Input type="number" value={minLot} onChange={(e) => { setMinLot(e.target.value); handleCustomInstrumentChange(); }} />
                     </div>
                     <div className="space-y-2">
                       <Label>Lot Step</Label>
-                      <Input 
-                        type="number" 
-                        value={lotStep} 
-                        onChange={(e) => {
-                          setLotStep(e.target.value);
-                          handleCustomInstrumentChange();
-                        }} 
-                      />
+                      <Input type="number" value={lotStep} onChange={(e) => { setLotStep(e.target.value); handleCustomInstrumentChange(); }} />
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-4 italic flex items-center gap-1">
@@ -303,11 +267,10 @@ export function RiskCalculator() {
                </CardContent>
             </Card>
 
-            {/* 3. Trade Setup */}
             <Card className="bg-card/50 border-border/50">
                <CardContent className="p-6">
                   <h2 className="text-lg font-bold font-mono text-white mb-4 flex items-center gap-2">
-                    <span className="bg-primary/20 text-primary p-1 rounded">3</span> 
+                    <span className="bg-primary/20 text-primary p-1 rounded">3</span>
                     Trade Setup
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -340,7 +303,6 @@ export function RiskCalculator() {
             </Card>
           </div>
 
-          {/* Output Card */}
           <div className="lg:col-span-4 sticky top-6">
              <Card className="bg-card border-primary/30 shadow-lg shadow-black/40">
                 <CardContent className="p-6">
@@ -407,7 +369,7 @@ export function RiskCalculator() {
         <Card className="bg-card/50 border-border/50 max-w-3xl">
           <CardContent className="p-8 prose prose-invert max-w-none">
             <h2 className="text-2xl font-mono text-white mb-6">How this is calculated</h2>
-            
+
             <div className="space-y-6">
               <section>
                 <h3 className="text-lg font-bold text-primary">1. Risk Amount</h3>
@@ -435,7 +397,7 @@ export function RiskCalculator() {
                   Raw Lot Size = Risk Amount / (Distance × Contract Size)
                 </p>
                 <p className="text-sm text-foreground mt-2">
-                  Contract size is how much of the underlying asset constitutes 1 standard lot. 
+                  Contract size is how much of the underlying asset constitutes 1 standard lot.
                   For forex, it's typically 100,000. For Gold (XAUUSD), it is usually 100 ounces.
                   The raw lot size is then rounded DOWN to the nearest 'Lot Step' (e.g., 0.01) to stay within risk limits.
                 </p>

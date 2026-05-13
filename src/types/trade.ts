@@ -40,7 +40,7 @@ export interface Trade {
   // Timing
   openTime?: string; // ISO String
   closeTime?: string; // ISO String
-  closeReason?: "TP" | "SL" | "MANUAL" | "EXPIRED" | "UNKNOWN";
+  closeReason?: "TP" | "SL" | "NEWS" | "MANUAL" | "BOT_LOGIC" | "EXPIRED" | "UNKNOWN";
   
   // Actual MT5 Result
   grossPnl?: number;

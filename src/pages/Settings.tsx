@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "@journal/contexts/AuthContext";
 import { updateProfile } from "firebase/auth";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
+import { Button } from "@journal/components/ui/button";
+import { Input } from "@journal/components/ui/input";
+import { Label } from "@journal/components/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@journal/components/ui/card";
 import { Settings as SettingsIcon, Save } from "lucide-react";
 
 export function Settings() {
@@ -30,11 +30,10 @@ export function Settings() {
           displayName: displayName,
         });
       }
-      
+
       localStorage.setItem("startBalance", startBalance);
       localStorage.setItem("journalName", journalName);
-      
-      // Dispatch custom event for journalName update across components
+
       window.dispatchEvent(new Event("journalNameUpdate"));
       window.dispatchEvent(new Event("startBalanceUpdate"));
 
@@ -69,34 +68,34 @@ export function Settings() {
             <Input id="email" value={user?.email || ""} disabled className="bg-muted text-muted-foreground" />
             <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
-            <Input 
-              id="displayName" 
-              value={displayName} 
-              onChange={(e) => setDisplayName(e.target.value)} 
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. John Doe"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="journalName">Journal Title</Label>
-            <Input 
-              id="journalName" 
-              value={journalName} 
-              onChange={(e) => setJournalName(e.target.value)} 
+            <Input
+              id="journalName"
+              value={journalName}
+              onChange={(e) => setJournalName(e.target.value)}
               placeholder="e.g. My Trading Journal"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="startBalance">Starting Equity / Balance</Label>
-            <Input 
-              id="startBalance" 
+            <Input
+              id="startBalance"
               type="number"
-              value={startBalance} 
-              onChange={(e) => setStartBalance(e.target.value)} 
+              value={startBalance}
+              onChange={(e) => setStartBalance(e.target.value)}
               placeholder="1000"
             />
             <p className="text-xs text-muted-foreground">This value is used to calculate your current equity.</p>

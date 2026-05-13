@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Calculator, LogOut, Activity, PlusCircle, FolderGit2, Settings as SettingsIcon, UserCircle } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "../ui/button";
+import { LayoutDashboard, Calculator, LogOut, Activity, PlusCircle, FolderGit2, Settings as SettingsIcon, UserCircle, Wallet } from "lucide-react";
+import { useAuth } from "@journal/contexts/AuthContext";
+import { Button } from "@journal/components/ui/button";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -13,11 +13,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
 
   const navItems = [
-    { name: "New Trade", path: "/new-trade", icon: PlusCircle },
-    { name: "Dashboard", path: "/", icon: LayoutDashboard },
-    { name: "Strategies", path: "/strategies", icon: FolderGit2 },
-    { name: "Risk Calculator", path: "/risk-calculator", icon: Calculator },
-    { name: "Settings", path: "/settings", icon: SettingsIcon },
+    { name: "New Trade", path: "/journal/new-trade", icon: PlusCircle },
+    { name: "Dashboard", path: "/journal/dashboard", icon: LayoutDashboard },
+    { name: "Cashflows", path: "/journal/cashflows", icon: Wallet },
+    { name: "Strategies", path: "/journal/strategies", icon: FolderGit2 },
+    { name: "Risk Calculator", path: "/journal/risk-calculator", icon: Calculator },
+    { name: "Settings", path: "/journal/settings", icon: SettingsIcon },
   ];
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || "Trader";
@@ -35,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
           </div>
         </div>
-        
+
         <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -45,8 +46,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition-colors ${
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
+                  isActive
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
@@ -57,7 +58,13 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-mono"
+          >
+            ← Portfolio
+          </Link>
           <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
             <LogOut size={16} />
             Logout
@@ -76,12 +83,17 @@ export function AppLayout({ children }: AppLayoutProps) {
               <span className="text-sm font-bold truncate text-white">{displayName}</span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
-             <LogOut size={18} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to="/" className="text-xs font-mono text-muted-foreground hover:text-white transition-colors px-2">
+              ← Portfolio
+            </Link>
+            <Button variant="ghost" size="icon" onClick={logout}>
+               <LogOut size={18} />
+            </Button>
+          </div>
         </header>
 
-        {/* Mobile Nav Header */}
+        {/* Mobile Nav */}
         <div className="md:hidden px-4 py-2 flex gap-4 overflow-x-auto no-scrollbar border-b border-border bg-background sticky top-[73px] z-40 shadow-sm">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -90,8 +102,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  isActive 
-                    ? "bg-primary text-black" 
+                  isActive
+                    ? "bg-primary text-black"
                     : "bg-muted text-muted-foreground"
                 }`}
               >

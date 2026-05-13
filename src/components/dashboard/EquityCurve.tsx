@@ -165,8 +165,8 @@ export function EquityCurve({ trades, startingBalance: externalSb, setStartingBa
                labelFormatter={(label, payload) => {
                  return payload && payload.length > 0 ? payload[0].payload.tooltipLabel : label;
                }}
-               formatter={(value: number) => {
-                 return [`$${value.toFixed(2)}`, 'Balance']
+               formatter={(value) => {
+                 return [`$${Number(value).toFixed(2)}`, 'Balance']
                }}
             />
             <Area 

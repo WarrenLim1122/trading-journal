@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Trade } from "../../types/trade";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
 import { tradeService } from "../../lib/tradeService";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
@@ -15,9 +15,48 @@ interface Props {
   trades: Trade[];
   onTradeDeleted: () => void;
   onRowClick?: (tradeId: string) => void;
+  sortKey?: keyof Trade;
+  sortDirection?: "asc" | "desc";
+  onSort?: (key: keyof Trade) => void;
 }
 
-export function ListOverview({ trades, onTradeDeleted, onRowClick }: Props) {
+interface SortableHeaderProps {
+  label: string;
+  sortKey?: keyof Trade;
+  activeKey?: keyof Trade;
+  direction?: "asc" | "desc";
+  onSort?: (key: keyof Trade) => void;
+  className?: string;
+}
+
+function SortableHeader({ label, sortKey, activeKey, direction, onSort, className }: SortableHeaderProps) {
+  const sortable = !!(sortKey && onSort);
+  const isActive = sortable && activeKey === sortKey;
+  return (
+    <TableHead className={className}>
+      {sortable ? (
+        <button
+          type="button"
+          onClick={() => onSort!(sortKey!)}
+          className={`inline-flex w-full items-center justify-center gap-1 font-mono uppercase select-none cursor-pointer transition-colors ${
+            isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {label}
+          {isActive ? (
+            direction === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+          ) : (
+            <ChevronsUpDown size={11} className="opacity-40" />
+          )}
+        </button>
+      ) : (
+        <span className="font-mono text-muted-foreground">{label}</span>
+      )}
+    </TableHead>
+  );
+}
+
+export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort }: Props) {
   const { user } = useAuth();
   
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
@@ -42,27 +81,29 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick }: Props) {
   return (
     <div className="rounded-xl border border-white/10 bg-card pb-2">
       <div className="w-full overflow-x-auto custom-scrollbar pb-2">
-        <Table className="text-xs w-full min-w-[1400px]">
+        <Table className="text-xs w-full min-w-[1640px]">
         <TableHeader className="bg-muted/50">
           <TableRow className="border-b border-white/10 hover:bg-transparent">
             <TableHead className="font-mono text-muted-foreground w-8 text-center border-r border-white/5 border-b-0 h-10 px-1">#</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-20">Symbol</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-24">Date</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-20">Time</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-20">Type</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-24">Outcome</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-20">Volume</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-1 w-20">Price</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-1 w-20">SL</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-1 w-20">TP</TableHead>
-            <TableHead className="font-mono text-muted-foreground text-center border-r border-white/5 border-b-0 px-2 w-24">PnL</TableHead>
+            <SortableHeader label="Symbol" sortKey="pair" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
+            <SortableHeader label="Ticket" sortKey="ticket" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-28" />
+            <SortableHeader label="Date" sortKey="date" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
+            <SortableHeader label="Time" sortKey="date" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
+            <SortableHeader label="Type" sortKey="position" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
+            <SortableHeader label="Outcome" sortKey="outcome" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
+            <SortableHeader label="Exit" sortKey="closeReason" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
+            <SortableHeader label="Volume" sortKey="volume" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
+            <SortableHeader label="Price" sortKey="entryPrice" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
+            <SortableHeader label="SL" sortKey="stopLoss" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
+            <SortableHeader label="TP" sortKey="takeProfit" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
+            <SortableHeader label="PnL" sortKey="pnlAmount" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
             <TableHead className="font-mono text-muted-foreground text-center border-b-0 px-2 w-24">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {trades.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={12} className="h-24 text-center text-muted-foreground font-mono">
+              <TableCell colSpan={14} className="h-24 text-center text-muted-foreground font-mono">
                 No trades match your filters.
               </TableCell>
             </TableRow>
@@ -80,13 +121,13 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick }: Props) {
               return (
               <TableRow key={trade.id} className="border-b border-white/5 hover:bg-muted/20 group cursor-pointer" onClick={() => onRowClick && onRowClick(trade.id)}>
                 <TableCell className="font-mono text-muted-foreground text-center border-r border-white/5 px-1 py-2.5">
-                  <div className="flex flex-col items-center justify-center gap-1">
-                     <span>{i + 1}</span>
-                     {trade.source === 'bot' && <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1 py-0.5 rounded leading-none">BOT</span>}
-                  </div>
+                  {i + 1}
                 </TableCell>
-                <TableCell className="font-bold text-foreground text-center border-r border-white/5 px-2 py-2.5 line-clamp-1">
-                  {symbol || "-"}
+                <TableCell className="text-center border-r border-white/5 px-2 py-2">
+                  <span className="font-bold text-foreground font-mono leading-tight">{symbol || "-"}</span>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-2 py-2.5">
+                  {trade.ticket !== undefined ? trade.ticket : "-"}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center border-r border-white/5 px-2 py-2.5 whitespace-nowrap">
                   {format(parsedDate, "MMM d, yyyy")}
@@ -109,6 +150,19 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick }: Props) {
                   }`}>
                     {outcomeDisplay === 'BREAKEVEN' ? 'B/E' : outcomeDisplay}
                   </span>
+                </TableCell>
+                <TableCell className="text-center border-r border-white/5 px-2 py-2.5">
+                  {(() => {
+                    const cr = trade.closeReason;
+                    if (cr === "TP")        return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#22c55e]">🎯 TP</span>;
+                    if (cr === "SL")        return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#ef4444]">🛑 SL</span>;
+                    if (cr === "NEWS")      return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#f59e0b]">📰 News</span>;
+                    if (cr === "MANUAL")    return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">✋ Manual</span>;
+                    if (cr === "BOT_LOGIC") return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#a855f7]">🤖 Bot</span>;
+                    if (cr === "EXPIRED")   return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">⏰ Expired</span>;
+                    if (cr === "UNKNOWN")   return <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-muted-foreground">❓ Unknown</span>;
+                    return <span className="font-mono text-muted-foreground">—</span>;
+                  })()}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-2 py-2.5">
                   {trade.volume !== undefined ? trade.volume : "-"}

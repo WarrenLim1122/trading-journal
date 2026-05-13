@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { tradeService } from "../lib/tradeService";
-import { Trade } from "../types/trade";
+import { useAuth } from "@journal/contexts/AuthContext";
+import { tradeService } from "@journal/lib/tradeService";
+import { Trade } from "@journal/types/trade";
 import { FolderGit2, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent } from "@journal/components/ui/card";
 
 export function StrategiesDashboard() {
   const { user } = useAuth();
@@ -33,7 +33,7 @@ export function StrategiesDashboard() {
       if (!stats[strat]) {
         stats[strat] = { total: 0, wins: 0, losses: 0, breakevens: 0, totalProfit: 0 };
       }
-      
+
       stats[strat].total += 1;
       if (t.outcome === "WIN") stats[strat].wins += 1;
       else if (t.outcome === "LOSE") stats[strat].losses += 1;
@@ -80,7 +80,7 @@ export function StrategiesDashboard() {
                   <h3 className="text-xl font-bold font-mono text-white mb-4 truncate" title={strat.name}>
                     {strat.name}
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-black/40 p-3 rounded text-center">
                       <p className="text-xs text-muted-foreground uppercase mb-1">Win Rate</p>

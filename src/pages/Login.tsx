@@ -25,7 +25,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/journal/dashboard");
     }
   }, [user, navigate]);
 
@@ -141,7 +141,7 @@ export default function Login() {
         <div className="w-full lg:w-1/2 flex items-center justify-center lg:justify-end p-8 lg:pr-16 xl:pr-32 pointer-events-auto">
           <div className="mx-auto w-full max-w-sm flex flex-col justify-center space-y-6 bg-background/90 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
             <div className="flex flex-col space-y-2 text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               {isForgotPassword ? "Reset password" : isSignUp ? "Create an account" : "Welcome back"}
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -285,7 +285,7 @@ export default function Login() {
                   </div>
                 </div>
 
-                <Button disabled={loading} variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full gap-2 font-medium">
+                <Button disabled={loading} variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full gap-2 font-medium text-white border-white/20 hover:bg-white/10">
                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
                      <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
                      <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4" />

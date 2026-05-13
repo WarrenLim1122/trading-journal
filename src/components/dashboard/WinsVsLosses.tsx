@@ -193,7 +193,7 @@ export function WinsVsLosses({ trades }: Props) {
                            <div className="bg-[#111] border border-[#333] p-2 rounded text-xs font-mono">
                              <div className="mb-1 text-muted-foreground">{label}</div>
                              {payload.map((data, idx) => {
-                               if (data.value && data.value > 0) {
+                               if (data.value && Number(data.value) > 0) {
                                  return (
                                    <div key={idx} style={{ color: data.color }}>
                                      {data.name}: {data.value}

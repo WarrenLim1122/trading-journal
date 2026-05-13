@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Error sending password reset email", error);
       throw error;
     }
-  }
+  };
 
   const logout = async () => {
     try {
