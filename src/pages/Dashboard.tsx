@@ -64,14 +64,20 @@ export default function Dashboard() {
   }, []);
 
   const fetchTrades = async () => {
-    if (user) {
-      setLoading(true);
+    if (!user) return;
+    setLoading(true);
+    try {
       const [tradesData, cashflowsData] = await Promise.all([
         tradeService.getTrades(user.uid),
         cashflowService.getCashflows(user.uid),
       ]);
       setTrades(tradesData);
       setCashflows(cashflowsData);
+    } catch (e) {
+      // Loading must clear even when a Firestore read throws (e.g. restrictive
+      // rules), otherwise the dashboard is stuck on "Loading journal..." forever.
+      console.error("Failed to fetch journal data:", e);
+    } finally {
       setLoading(false);
     }
   };

@@ -34,7 +34,13 @@ export const cashflowService = {
       const snap = await getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Cashflow[];
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
+      // Reads fail soft so the dashboard doesn't freeze on missing collection
+      // or restrictive Firestore rules. Writes still surface errors.
+      console.error("Firestore Error (cashflow GET):", JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        userId: auth.currentUser?.uid,
+        path,
+      }));
       return [];
     }
   },
