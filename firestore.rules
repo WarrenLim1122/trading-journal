@@ -73,8 +73,8 @@ service cloud.firestore {
                     incoming().updatedAt == request.time &&
                     incoming().diff(existing()).affectedKeys().hasOnly([
                       'pair', 'outcome', 'date', 'position', 'strategy', 'pnlPercentage',
-                      'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'takeProfit', 'stopLoss',
-                      'volume', 'ticket', 'notes', 'updatedAt',
+                      'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'closePrice',
+                      'takeProfit', 'stopLoss', 'volume', 'ticket', 'notes', 'updatedAt',
                       'closeReason'
                     ]);
 
