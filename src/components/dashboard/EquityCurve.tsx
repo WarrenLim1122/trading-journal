@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Trade } from '../../types/trade';
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Label } from '../ui/label';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function EquityCurve({ trades, startingBalance: externalSb, setStartingBalance: setExternalSb }: Props) {
+  const { symbol } = useCurrency();
   const [isCompounding, setIsCompounding] = useState(false);
   const [internalSb, setInternalSb] = useState("1000");
   const [trackingMode, setTrackingMode] = useState<"Trade" | "Date">("Trade");
@@ -88,7 +90,7 @@ export function EquityCurve({ trades, startingBalance: externalSb, setStartingBa
            <CardTitle className="text-sm text-muted-foreground font-mono uppercase">Equity Curve</CardTitle>
            <div className="flex items-baseline gap-2">
              <span className="text-3xl font-bold font-mono tracking-tight cursor-default">
-               {endBalance < 0 ? `-$${Math.abs(endBalance).toFixed(2)}` : `$${endBalance.toFixed(2)}`}
+               {endBalance < 0 ? `-${symbol}${Math.abs(endBalance).toFixed(2)}` : `${symbol}${endBalance.toFixed(2)}`}
              </span>
              <span className={`text-sm font-mono font-bold ${totalReturn >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                 {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%
@@ -155,7 +157,7 @@ export function EquityCurve({ trades, startingBalance: externalSb, setStartingBa
                stroke="#888" 
                tick={{fontSize: 12}} 
                width={80} 
-               tickFormatter={(val) => `$${val}`} 
+               tickFormatter={(val) => `${symbol}${val}`}
                axisLine={false}
                domain={[(dataMin: number) => Math.min(startNum, dataMin), 'auto']}
             />
@@ -166,7 +168,7 @@ export function EquityCurve({ trades, startingBalance: externalSb, setStartingBa
                  return payload && payload.length > 0 ? payload[0].payload.tooltipLabel : label;
                }}
                formatter={(value) => {
-                 return [`$${Number(value).toFixed(2)}`, 'Balance']
+                 return [`${symbol}${Number(value).toFixed(2)}`, 'Balance']
                }}
             />
             <Area 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -18,6 +19,7 @@ interface EditTradeDialogProps {
 
 export function EditTradeDialog({ trade, open, onOpenChange, onTradeEdited, trades = [] }: EditTradeDialogProps) {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
   const [pair, setPair] = useState("");
   const [outcome, setOutcome] = useState<"WIN" | "LOSE" | "LOSS" | "BREAKEVEN" | "">("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -332,7 +334,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onTradeEdited, trad
              <Input id="ticket-edit" type="text" value={ticket} onChange={(e) => setTicket(e.target.value)} className="col-span-3" placeholder="MT5 ticket number" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-             <Label htmlFor="pnlAmount-edit" className="text-right">PnL ($)</Label>
+             <Label htmlFor="pnlAmount-edit" className="text-right">PnL ({symbol})</Label>
              <Input id="pnlAmount-edit" type="number" step="any" value={pnlAmount} onChange={(e) => setPnlAmount(e.target.value)} className="col-span-3" placeholder="129" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

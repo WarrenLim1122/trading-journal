@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -16,6 +17,7 @@ interface AddTradeDialogProps {
 
 export function AddTradeDialog({ onTradeAdded, trades = [] }: AddTradeDialogProps) {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
   const [open, setOpen] = useState(false);
   const [pair, setPair] = useState("");
   const [outcome, setOutcome] = useState<"WIN" | "LOSE" | "BREAKEVEN" | "">("");
@@ -273,7 +275,7 @@ export function AddTradeDialog({ onTradeAdded, trades = [] }: AddTradeDialogProp
              <Input id="takeProfit" type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} className="col-span-3" placeholder="60000" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-             <Label htmlFor="pnlAmount" className="text-right">PnL ($)</Label>
+             <Label htmlFor="pnlAmount" className="text-right">PnL ({symbol})</Label>
              <Input id="pnlAmount" type="number" step="any" value={pnlAmount} onChange={(e) => setPnlAmount(e.target.value)} className="col-span-3" placeholder="129" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

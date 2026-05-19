@@ -10,6 +10,7 @@ import { EditTradeDialog } from "./EditTradeDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
 import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice } from "../../lib/tradeUtils";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 
 interface Props {
   trades: Trade[];
@@ -58,7 +59,8 @@ function SortableHeader({ label, sortKey, activeKey, direction, onSort, classNam
 
 export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort }: Props) {
   const { user } = useAuth();
-  
+  const { symbol: currencySymbol } = useCurrency();
+
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -177,7 +179,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   {trade.takeProfit !== undefined ? trade.takeProfit : "-"}
                 </TableCell>
                 <TableCell className={`text-center font-mono font-bold border-r border-white/5 px-2 py-2.5 ${pnlValue && pnlValue > 0 ? "text-[#22c55e]" : pnlValue && pnlValue < 0 ? "text-[#ef4444]" : "text-muted-foreground"}`}>
-                  {pnlValue !== undefined ? `$${pnlValue.toFixed(2)}` : "-"}
+                  {pnlValue !== undefined ? `${currencySymbol}${pnlValue.toFixed(2)}` : "-"}
                 </TableCell>
                 <TableCell className="p-0 border-white/5 px-1 py-1">
                   <div className="flex items-center justify-center gap-1 w-full h-full">

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Trade } from "../../types/trade";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, getDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, startOfYear, endOfYear, addYears, subYears, eachMonthOfInterval } from "date-fns";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, CalendarRange, Clock } from "lucide-react";
@@ -14,6 +15,7 @@ interface Props {
 type ViewMode = 'Day' | 'Week' | 'Month' | 'Year';
 
 export function CalendarView({ trades, startBalance = 1000, onTradeClick }: Props) {
+  const { symbol } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('Month');
 
@@ -69,7 +71,7 @@ export function CalendarView({ trades, startBalance = 1000, onTradeClick }: Prop
           <span className="font-mono font-semibold text-white/80 truncate uppercase tracking-tight">{getTradeSymbol(trade) || 'TRADE'}</span>
         </div>
         <span className={`font-mono font-bold shrink-0 ml-1 ${pnlResult > 0 ? 'text-[#22c55e]' : pnlResult < 0 ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>
-          {dynPct !== undefined ? `${dynPct > 0 ? '+' : ''}${dynPct.toFixed(2)}%` : (pnlResult > 0 ? `+$${pnlResult.toFixed(2)}` : pnlResult < 0 ? `-$${Math.abs(pnlResult).toFixed(2)}` : 'B/E')}
+          {dynPct !== undefined ? `${dynPct > 0 ? '+' : ''}${dynPct.toFixed(2)}%` : (pnlResult > 0 ? `+${symbol}${pnlResult.toFixed(2)}` : pnlResult < 0 ? `-${symbol}${Math.abs(pnlResult).toFixed(2)}` : 'B/E')}
         </span>
       </div>
     );

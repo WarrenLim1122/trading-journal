@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Trade } from "../../types/trade";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { getTradePnl, getTradeOutcome, getTradeSymbol, getTradeDisplayOutcome, getTradeDate } from "../../lib/tradeUtils";
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function WinsVsLosses({ trades }: Props) {
+  const { symbol } = useCurrency();
   const stats = useMemo(() => {
     if (trades.length === 0) return { winRate: 0, lossesRate: 0, totalProfit: 0, strategyData: [], dayData: [], breakevenRate: 0 };
     
@@ -166,7 +168,7 @@ export function WinsVsLosses({ trades }: Props) {
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-4">
                   <span className={`text-xl sm:text-xl md:text-xl font-bold text-center break-words max-w-[140px] leading-tight ${stats.totalProfit < 0 ? "text-[#ef4444]" : "text-[#22c55e]"}`}>
-                    {stats.totalProfit < 0 ? `-$${Math.abs(stats.totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${stats.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    {stats.totalProfit < 0 ? `-${symbol}${Math.abs(stats.totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${symbol}${stats.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </span>
                 </div>
              </div>

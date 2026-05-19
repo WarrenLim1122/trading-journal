@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { cn } from "../../lib/utils";
 import { Trade } from "../../types/trade";
@@ -14,6 +15,7 @@ interface TradeDetailDialogProps {
 }
 
 export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDialogProps) {
+  const { symbol: currencySymbol } = useCurrency();
   const [imageExpanded, setImageExpanded] = useState(false);
 
   if (!trade) return null;
@@ -79,7 +81,7 @@ export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDial
                 <div className="flex flex-col justify-center">
                   <span className="text-[10px] uppercase font-mono text-muted-foreground leading-none mb-0.5">Net PNL</span>
                   <span className={cn("text-xl font-mono font-bold tracking-tight leading-none", pnlResult > 0 ? "text-green-500" : pnlResult < 0 ? "text-red-500" : "text-amber-500")}>
-                    {pnlResult > 0 ? "+" : ""}{trade.accountCurrency === "USD" ? "$" : ""}{pnlResult?.toFixed(2)}{trade.accountCurrency && trade.accountCurrency !== "USD" ? ` ${trade.accountCurrency}` : ""}
+                    {pnlResult > 0 ? "+" : ""}{currencySymbol}{pnlResult?.toFixed(2)}
                   </span>
                 </div>
                 {/* Pipe divider before badges */}
