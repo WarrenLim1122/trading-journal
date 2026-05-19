@@ -335,7 +335,7 @@ export function RiskCalculator() {
 
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                            <div>
-                             <p className="text-xs text-muted-foreground mb-1">Actual Risk ($)</p>
+                             <p className="text-xs text-muted-foreground mb-1">Actual Risk ({symbol})</p>
                              <p className="text-lg font-bold text-red-400 font-mono">{symbol}{results.actualRisk.toFixed(2)}</p>
                            </div>
                            <div>

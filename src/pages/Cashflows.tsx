@@ -271,7 +271,7 @@ export function Cashflows() {
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Amount ($)</Label>
+              <Label className="text-right">Amount ({symbol})</Label>
               <Input
                 type="number"
                 step="any"
