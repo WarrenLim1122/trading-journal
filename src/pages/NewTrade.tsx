@@ -10,9 +10,11 @@ import { tradeService } from "../lib/tradeService";
 import { Trade } from "../types/trade";
 import { PlusCircle, Calendar, Clock } from "lucide-react";
 import { autoCalculatePnL } from "../lib/mt5Calculation";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 
 export function NewTrade() {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
   const navigate = useNavigate();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
@@ -368,7 +370,7 @@ export function NewTrade() {
                <Input id="volume" type="number" step="any" value={volume} onChange={(e) => setVolume(e.target.value)} />
              </div>
              <div className="space-y-2">
-               <Label htmlFor="pnlAmount">Final PnL ($) (Optional)</Label>
+               <Label htmlFor="pnlAmount">Final PnL ({symbol}) (Optional)</Label>
                <Input id="pnlAmount" type="number" step="any" value={pnlAmount} onChange={(e) => setPnlAmount(e.target.value)} placeholder={autoCalcPnl !== undefined ? `Calculated: ${autoCalcPnl.toFixed(2)}` : "Auto-calculated if empty"} />
              </div>
           </div>

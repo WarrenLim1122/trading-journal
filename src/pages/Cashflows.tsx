@@ -17,6 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@journal/components/ui/table";
 import { Plus, Pencil, Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { format } from "date-fns";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 
 type CashflowType = "deposit" | "withdrawal";
 
@@ -41,6 +42,7 @@ const blankForm = (): FormState => {
 
 export function Cashflows() {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
   const [cashflows, setCashflows] = useState<Cashflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -172,16 +174,16 @@ export function Cashflows() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-white/10 bg-card p-4">
           <div className="flex items-center gap-2 text-xs font-mono uppercase text-muted-foreground"><ArrowDownToLine size={14} className="text-[#22c55e]" /> Deposits</div>
-          <div className="text-2xl font-bold font-mono mt-1 text-[#22c55e]">${totals.deposits.toFixed(2)}</div>
+          <div className="text-2xl font-bold font-mono mt-1 text-[#22c55e]">{symbol}{totals.deposits.toFixed(2)}</div>
         </div>
         <div className="rounded-xl border border-white/10 bg-card p-4">
           <div className="flex items-center gap-2 text-xs font-mono uppercase text-muted-foreground"><ArrowUpFromLine size={14} className="text-[#ef4444]" /> Withdrawals</div>
-          <div className="text-2xl font-bold font-mono mt-1 text-[#ef4444]">${totals.withdrawals.toFixed(2)}</div>
+          <div className="text-2xl font-bold font-mono mt-1 text-[#ef4444]">{symbol}{totals.withdrawals.toFixed(2)}</div>
         </div>
         <div className="rounded-xl border border-white/10 bg-card p-4">
           <div className="text-xs font-mono uppercase text-muted-foreground">Net Cashflow</div>
           <div className={`text-2xl font-bold font-mono mt-1 ${totals.net >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-            {totals.net >= 0 ? "+" : "−"}${Math.abs(totals.net).toFixed(2)}
+            {totals.net >= 0 ? "+" : "−"}{symbol}{Math.abs(totals.net).toFixed(2)}
           </div>
         </div>
       </div>
@@ -226,7 +228,7 @@ export function Cashflows() {
                         </span>
                       </TableCell>
                       <TableCell className={`text-right pr-6 font-mono font-bold ${cf.type === "deposit" ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                        {cf.type === "deposit" ? "+" : "−"}${cf.amount.toFixed(2)}
+                        {cf.type === "deposit" ? "+" : "−"}{symbol}{cf.amount.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-muted-foreground font-mono text-xs">
                         {cf.note || <span className="opacity-50">—</span>}
@@ -313,7 +315,7 @@ export function Cashflows() {
             <DialogTitle className="font-mono text-xl text-white">Delete Cashflow</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {toDelete && (
-                <>This will permanently remove the {toDelete.type} of ${toDelete.amount.toFixed(2)} on {format(new Date(toDelete.date), "MMM d, yyyy")}.</>
+                <>This will permanently remove the {toDelete.type} of {symbol}{toDelete.amount.toFixed(2)} on {format(new Date(toDelete.date), "MMM d, yyyy")}.</>
               )}
             </DialogDescription>
           </DialogHeader>

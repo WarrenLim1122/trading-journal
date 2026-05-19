@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@journal/components/ui/card";
 import { Info, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@journal/components/ui/button";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
 
 interface Preset {
   name: string;
@@ -22,6 +23,7 @@ const PRESETS: Record<string, Preset> = {
 };
 
 export function RiskCalculator() {
+  const { symbol } = useCurrency();
   const [activeTab, setActiveTab] = useState<"calculator" | "guide">("calculator");
 
   // Account
@@ -205,7 +207,7 @@ export function RiskCalculator() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Account Equity ($)</Label>
+                    <Label>Account Equity ({symbol})</Label>
                     <Input type="number" value={accountEquity} onChange={(e) => setAccountEquity(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -215,7 +217,7 @@ export function RiskCalculator() {
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="percent">Risk (%)</SelectItem>
-                          <SelectItem value="fixed">Fixed ($)</SelectItem>
+                          <SelectItem value="fixed">Fixed ({symbol})</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -334,7 +336,7 @@ export function RiskCalculator() {
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                            <div>
                              <p className="text-xs text-muted-foreground mb-1">Actual Risk ($)</p>
-                             <p className="text-lg font-bold text-red-400 font-mono">${results.actualRisk.toFixed(2)}</p>
+                             <p className="text-lg font-bold text-red-400 font-mono">{symbol}{results.actualRisk.toFixed(2)}</p>
                            </div>
                            <div>
                              <p className="text-xs text-muted-foreground mb-1">Actual Risk (%)</p>
@@ -344,7 +346,7 @@ export function RiskCalculator() {
                              <>
                                <div>
                                  <p className="text-xs text-muted-foreground mb-1">Potential Profit</p>
-                                 <p className="text-lg font-bold text-green-400 font-mono">${results.reward.toFixed(2)}</p>
+                                 <p className="text-lg font-bold text-green-400 font-mono">{symbol}{results.reward.toFixed(2)}</p>
                                </div>
                                <div>
                                  <p className="text-xs text-muted-foreground mb-1">Reward / Risk</p>
