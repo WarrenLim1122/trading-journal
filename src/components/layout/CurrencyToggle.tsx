@@ -1,12 +1,12 @@
-import { Button } from "../ui/button";
+import { Button } from "@journal/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+} from "@journal/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import { useCurrency, CURRENCIES } from "../../contexts/CurrencyContext";
+import { useCurrency, CURRENCIES } from "@journal/contexts/CurrencyContext";
 
 export function CurrencyToggle() {
   const { currency, setCurrency, symbol } = useCurrency();
@@ -35,7 +35,7 @@ export function CurrencyToggle() {
             key={c.code}
             onClick={() => setCurrency(c.code)}
             className={`font-mono cursor-pointer ${
-              c.code === currency ? "text-primary" : ""
+              c.code === currency ? "text-primary font-semibold" : ""
             }`}
           >
             <span className="w-8 tabular-nums">{c.symbol}</span>
