@@ -78,8 +78,11 @@ is left exactly as-is** — only the symbol character changes.
 | `src/pages/Dashboard.tsx` | 365 | Net cashflow pill |
 | `src/pages/Cashflows.tsx` | 175, 179, 184, 229, 316 | Deposits / withdrawals / net / row amount / delete-confirm text |
 | `src/pages/StrategiesDashboard.tsx` | 92 | Strategy total profit |
-| `src/pages/RiskCalculator.tsx` | 208, 218, 337, 347 | "Account Equity ($)" label, "Fixed ($)" select item, actual risk, reward |
+| `src/pages/RiskCalculator.tsx` | 208, 218, 337, 338, 347 | "Account Equity ($)", "Fixed ($)", actual risk value, **"Actual Risk ($)" label**, reward |
+| `src/pages/Cashflows.tsx` (form) | 274 | **"Amount ($)" input label** |
 | `src/pages/NewTrade.tsx` | 371 | "Final PnL ($)" field label |
+| `src/components/dashboard/AddTradeDialog.tsx` | 276 | **"PnL ($)" input label** |
+| `src/components/dashboard/EditTradeDialog.tsx` | 335 | **"PnL ($)" input label** |
 | `src/components/dashboard/ListOverview.tsx` | 180 | Row PnL |
 | `src/components/dashboard/EquityCurve.tsx` | 91, 158, 169 | End balance + recharts Y-axis tick formatter + tooltip formatter |
 | `src/components/dashboard/WinsVsLosses.tsx` | 169 | Total profit summary (uses `.toLocaleString`) |
@@ -91,6 +94,15 @@ is left exactly as-is** — only the symbol character changes.
 > grepped only `toFixed`. `WinsVsLosses` formats with `.toLocaleString`, and the
 > EquityCurve Y-axis tick is a separate `tickFormatter`. Both are genuine
 > currency-display sites and are now in scope (implemented in Task 6).
+>
+> **Spec amendment (2026-05-19, post spec-review of Task 5):** the original
+> discovery grep filtered out lines containing `className`, which hid every
+> `($)` *label* that shares its line with a class attribute. Unfiltered sweep
+> added: `RiskCalculator.tsx:338` ("Actual Risk ($)"),
+> `Cashflows.tsx:274` ("Amount ($)" form label),
+> `AddTradeDialog.tsx:276` and `EditTradeDialog.tsx:335` ("PnL ($)" labels).
+> The first two are in Task-5 files (`symbol` already in scope → label swap
+> only); the two dialogs are added to Task 6 (need import + hook + swap).
 
 **TradeDetailDialog note (deliberate decision):** line 82 currently shows `$`
 only when `trade.accountCurrency === "USD"` and otherwise appends the trade's

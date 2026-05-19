@@ -457,10 +457,20 @@ git commit -m "Mount CurrencyToggle and apply currency to Dashboard + exports"
 ### Task 5: Page call sites (Cashflows, Strategies, Risk Calculator, New Trade)
 
 **Files:**
-- Modify: `src/pages/Cashflows.tsx` (lines ~175, ~179, ~184, ~229, ~316)
+- Modify: `src/pages/Cashflows.tsx` (lines ~175, ~179, ~184, ~229, ~274, ~316)
 - Modify: `src/pages/StrategiesDashboard.tsx` (line ~92)
-- Modify: `src/pages/RiskCalculator.tsx` (lines ~208, ~218, ~337, ~347)
+- Modify: `src/pages/RiskCalculator.tsx` (lines ~208, ~218, ~337, ~338, ~347)
 - Modify: `src/pages/NewTrade.tsx` (line ~371)
+
+> **Import-path amendment (2026-05-19):** new imports use the `@journal/`
+> alias (`import { useCurrency } from "@journal/contexts/CurrencyContext";`),
+> NOT the relative path stated below — per `CLAUDE.md` / Task 3 review.
+>
+> **Scope amendment (post Task-5 spec review):** two more `($)` labels were
+> hidden from the original sweep by its `className` filter and are added as
+> Step 9 (Cashflows `Amount ($)` form label, line ~274) and Step 10
+> (RiskCalculator `Actual Risk ($)` label, line ~338). `symbol` is already in
+> scope in both files from this task's other edits.
 
 All four are pages in `src/pages/`, so the context import path is `../contexts/CurrencyContext`.
 
@@ -676,6 +686,37 @@ Replace with:
                <Label htmlFor="pnlAmount">Final PnL ({symbol}) (Optional)</Label>
 ```
 
+- [ ] **Step 15b: Cashflows — "Amount ($)" form label**
+
+`symbol` is already in scope in `Cashflows.tsx` (added in Step 1). Find:
+
+```tsx
+              <Label className="text-right">Amount ($)</Label>
+```
+
+Replace with:
+
+```tsx
+              <Label className="text-right">Amount ({symbol})</Label>
+```
+
+- [ ] **Step 15c: RiskCalculator — "Actual Risk ($)" label**
+
+`symbol` is already in scope in `RiskCalculator.tsx` (added in Step 9). Find:
+
+```tsx
+                             <p className="text-xs text-muted-foreground mb-1">Actual Risk ($)</p>
+```
+
+Replace with:
+
+```tsx
+                             <p className="text-xs text-muted-foreground mb-1">Actual Risk ({symbol})</p>
+```
+
+> Do NOT change the adjacent `Actual Risk (%)` label (line ~342) — that is a
+> percentage, not currency.
+
 - [ ] **Step 16: Run the test (lint)**
 
 Run: `npm run lint`
@@ -683,7 +724,7 @@ Expected: PASS (exit 0).
 
 - [ ] **Step 17: Manual check**
 
-With `npm run dev` running and SGD selected on the Dashboard: open Cashflows (totals, rows, delete dialog show `S$`), Strategies (profit shows `S$`), Risk Calculator (labels + results show `S$`), New Trade (PnL label shows `(S$)`).
+With `npm run dev` running and SGD selected on the Dashboard: open Cashflows (totals, rows, delete dialog, **Amount (S$) form label**), Strategies (profit shows `S$`), Risk Calculator (labels + results + **Actual Risk (S$)** show `S$`), New Trade (PnL label shows `(S$)`).
 
 - [ ] **Step 18: Commit**
 
@@ -702,6 +743,8 @@ git commit -m "Apply currency symbol to Cashflows/Strategies/RiskCalculator/NewT
 - Modify: `src/components/dashboard/WinsVsLosses.tsx` (line ~169)
 - Modify: `src/components/dashboard/CalendarView.tsx` (line ~72)
 - Modify: `src/components/dashboard/TradeDetailDialog.tsx` (line ~82)
+- Modify: `src/components/dashboard/AddTradeDialog.tsx` (line ~276)
+- Modify: `src/components/dashboard/EditTradeDialog.tsx` (line ~335)
 
 > **Import-path amendment (2026-05-19):** Per `CLAUDE.md` and the precedent set
 > in Task 3's code review, **all NEW imports added in this task use the
@@ -915,6 +958,58 @@ Replace with (swap BOTH `$` for `${symbol}`; `.toLocaleString` args and the sign
                     {stats.totalProfit < 0 ? `-${symbol}${Math.abs(stats.totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${symbol}${stats.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
 ```
 
+- [ ] **Step 9c: AddTradeDialog — import + hook + label**
+
+In `src/components/dashboard/AddTradeDialog.tsx` add (with the other imports, `@journal/` alias):
+
+```tsx
+import { useCurrency } from "@journal/contexts/CurrencyContext";
+```
+
+At the top of the `AddTradeDialog` component body (before the `return`), add:
+
+```tsx
+  const { symbol } = useCurrency();
+```
+
+Find:
+
+```tsx
+             <Label htmlFor="pnlAmount" className="text-right">PnL ($)</Label>
+```
+
+Replace with:
+
+```tsx
+             <Label htmlFor="pnlAmount" className="text-right">PnL ({symbol})</Label>
+```
+
+- [ ] **Step 9d: EditTradeDialog — import + hook + label**
+
+In `src/components/dashboard/EditTradeDialog.tsx` add (with the other imports, `@journal/` alias):
+
+```tsx
+import { useCurrency } from "@journal/contexts/CurrencyContext";
+```
+
+At the top of the `EditTradeDialog` component body (before the `return`), add:
+
+```tsx
+  const { symbol } = useCurrency();
+```
+
+Find:
+
+```tsx
+             <Label htmlFor="pnlAmount-edit" className="text-right">PnL ($)</Label>
+```
+
+Replace with:
+
+```tsx
+             <Label htmlFor="pnlAmount-edit" className="text-right">PnL ({symbol})</Label>
+```
+
 - [ ] **Step 10: Run the test (lint)**
 
 Run: `npm run lint`
@@ -927,7 +1022,7 @@ With `npm run dev` and SGD selected: on the Dashboard, the List overview rows, E
 - [ ] **Step 12: Commit**
 
 ```bash
-git add src/components/dashboard/ListOverview.tsx src/components/dashboard/EquityCurve.tsx src/components/dashboard/WinsVsLosses.tsx src/components/dashboard/CalendarView.tsx src/components/dashboard/TradeDetailDialog.tsx
+git add src/components/dashboard/ListOverview.tsx src/components/dashboard/EquityCurve.tsx src/components/dashboard/WinsVsLosses.tsx src/components/dashboard/CalendarView.tsx src/components/dashboard/TradeDetailDialog.tsx src/components/dashboard/AddTradeDialog.tsx src/components/dashboard/EditTradeDialog.tsx
 git commit -m "Apply currency symbol to Dashboard child components"
 ```
 
