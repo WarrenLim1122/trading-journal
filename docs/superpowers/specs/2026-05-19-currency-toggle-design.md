@@ -81,9 +81,16 @@ is left exactly as-is** — only the symbol character changes.
 | `src/pages/RiskCalculator.tsx` | 208, 218, 337, 347 | "Account Equity ($)" label, "Fixed ($)" select item, actual risk, reward |
 | `src/pages/NewTrade.tsx` | 371 | "Final PnL ($)" field label |
 | `src/components/dashboard/ListOverview.tsx` | 180 | Row PnL |
-| `src/components/dashboard/EquityCurve.tsx` | 91, 169 | End balance + recharts tooltip formatter |
+| `src/components/dashboard/EquityCurve.tsx` | 91, 158, 169 | End balance + recharts Y-axis tick formatter + tooltip formatter |
+| `src/components/dashboard/WinsVsLosses.tsx` | 169 | Total profit summary (uses `.toLocaleString`) |
 | `src/components/dashboard/CalendarView.tsx` | 72 | Per-day PnL badge |
 | `src/components/dashboard/TradeDetailDialog.tsx` | 82 | PnL (see note) |
+
+> **Spec amendment (2026-05-19, post code-review of Task 4):** `EquityCurve.tsx:158`
+> and `WinsVsLosses.tsx:169` were missed by the original discovery sweep, which
+> grepped only `toFixed`. `WinsVsLosses` formats with `.toLocaleString`, and the
+> EquityCurve Y-axis tick is a separate `tickFormatter`. Both are genuine
+> currency-display sites and are now in scope (implemented in Task 6).
 
 **TradeDetailDialog note (deliberate decision):** line 82 currently shows `$`
 only when `trade.accountCurrency === "USD"` and otherwise appends the trade's

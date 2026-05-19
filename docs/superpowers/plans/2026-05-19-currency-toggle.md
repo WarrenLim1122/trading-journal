@@ -698,11 +698,21 @@ git commit -m "Apply currency symbol to Cashflows/Strategies/RiskCalculator/NewT
 
 **Files:**
 - Modify: `src/components/dashboard/ListOverview.tsx` (line ~180)
-- Modify: `src/components/dashboard/EquityCurve.tsx` (lines ~91, ~169)
+- Modify: `src/components/dashboard/EquityCurve.tsx` (lines ~91, ~158, ~169)
+- Modify: `src/components/dashboard/WinsVsLosses.tsx` (line ~169)
 - Modify: `src/components/dashboard/CalendarView.tsx` (line ~72)
 - Modify: `src/components/dashboard/TradeDetailDialog.tsx` (line ~82)
 
-These live in `src/components/dashboard/`, so the context import path is `../../contexts/CurrencyContext` (matching how they already import `../../contexts/AuthContext` / `../../lib/...`).
+> **Import-path amendment (2026-05-19):** Per `CLAUDE.md` and the precedent set
+> in Task 3's code review, **all NEW imports added in this task use the
+> `@journal/` alias** — i.e. `import { useCurrency } from "@journal/contexts/CurrencyContext";`
+> — NOT the relative `../../contexts/...` form shown in the code blocks below.
+> Do not rewrite pre-existing relative imports in these files (out of scope).
+>
+> **Scope amendment (post Task-4 code review):** `EquityCurve.tsx:158`
+> (Y-axis `tickFormatter`) and `WinsVsLosses.tsx:169` (total profit, formatted
+> with `.toLocaleString`) were missed by the original `toFixed`-only sweep and
+> are added below as Step 5b and Steps 9a–9b.
 
 - [ ] **Step 1: ListOverview — import + hook**
 
@@ -790,6 +800,23 @@ Replace with:
                }}
 ```
 
+- [ ] **Step 5b: EquityCurve — Y-axis tick formatter**
+
+Find:
+
+```tsx
+               tickFormatter={(val) => `$${val}`} 
+```
+
+Replace with:
+
+```tsx
+               tickFormatter={(val) => `${symbol}${val}`} 
+```
+
+> Note: the original line has a trailing space after `}` — preserve it; match
+> the exact string. Only the `$` before `${val}` changes.
+
 - [ ] **Step 6: CalendarView — import + hook**
 
 In `src/components/dashboard/CalendarView.tsx`, add below:
@@ -860,6 +887,34 @@ Replace with:
                     {pnlResult > 0 ? "+" : ""}{symbol}{pnlResult?.toFixed(2)}
 ```
 
+- [ ] **Step 9a: WinsVsLosses — import + hook**
+
+`src/components/dashboard/WinsVsLosses.tsx` is `export function WinsVsLosses({ trades }: Props)`. Add this import alongside the existing imports at the top of the file (use the `@journal/` alias):
+
+```tsx
+import { useCurrency } from "@journal/contexts/CurrencyContext";
+```
+
+At the top of the `WinsVsLosses` component body (before the `useMemo`/`return`), add:
+
+```tsx
+  const { symbol } = useCurrency();
+```
+
+- [ ] **Step 9b: WinsVsLosses — total profit summary**
+
+Find (one line; uses `.toLocaleString`, two `$` occurrences — the `-$` loss branch and the `$` profit branch):
+
+```tsx
+                    {stats.totalProfit < 0 ? `-$${Math.abs(stats.totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${stats.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+```
+
+Replace with (swap BOTH `$` for `${symbol}`; `.toLocaleString` args and the sign branch unchanged):
+
+```tsx
+                    {stats.totalProfit < 0 ? `-${symbol}${Math.abs(stats.totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${symbol}${stats.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+```
+
 - [ ] **Step 10: Run the test (lint)**
 
 Run: `npm run lint`
@@ -867,12 +922,12 @@ Expected: PASS (exit 0). If `tsc` flags `trade` as now-unused on the edited line
 
 - [ ] **Step 11: Manual check**
 
-With `npm run dev` and SGD selected: on the Dashboard, the List overview rows, Equity Curve heading + hovered chart tooltip, and Calendar per-day badges all show `S$`. Click a trade card → the Trade Detail dialog Net PNL shows `S$` (no trailing currency code).
+With `npm run dev` and SGD selected: on the Dashboard, the List overview rows, Equity Curve heading + Y-axis ticks + hovered chart tooltip, the Win Vs Lose total-profit summary, and Calendar per-day badges all show `S$`. Click a trade card → the Trade Detail dialog Net PNL shows `S$` (no trailing currency code).
 
 - [ ] **Step 12: Commit**
 
 ```bash
-git add src/components/dashboard/ListOverview.tsx src/components/dashboard/EquityCurve.tsx src/components/dashboard/CalendarView.tsx src/components/dashboard/TradeDetailDialog.tsx
+git add src/components/dashboard/ListOverview.tsx src/components/dashboard/EquityCurve.tsx src/components/dashboard/WinsVsLosses.tsx src/components/dashboard/CalendarView.tsx src/components/dashboard/TradeDetailDialog.tsx
 git commit -m "Apply currency symbol to Dashboard child components"
 ```
 
