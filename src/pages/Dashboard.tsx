@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useCurrency } from "@journal/contexts/CurrencyContext";
+import { CurrencyToggle } from "@journal/components/layout/CurrencyToggle";
 import { Trade } from "../types/trade";
 import { Cashflow } from "../types/cashflow";
 import { tradeService } from "../lib/tradeService";
@@ -25,6 +27,7 @@ import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeO
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const { currency, symbol } = useCurrency();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [cashflows, setCashflows] = useState<Cashflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,7 +150,7 @@ export default function Dashboard() {
   const downloadCSV = () => {
     if (filteredTrades.length === 0) return;
 
-    const headers = ["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", "PnL", "Notes"];
+    const headers = ["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", `PnL (${currency})`, "Notes"];
     const rows = filteredTrades.map(t => {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
@@ -182,7 +185,7 @@ export default function Dashboard() {
   const downloadXLSX = () => {
     if (filteredTrades.length === 0) return;
 
-    const headers = ["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", "PnL", "Notes"];
+    const headers = ["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", `PnL (${currency})`, "Notes"];
     const rows = filteredTrades.map(t => {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
@@ -215,7 +218,7 @@ export default function Dashboard() {
     if (filteredTrades.length === 0) return;
 
     const doc = new jsPDF("landscape");
-    const headers = [["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", "PnL"]];
+    const headers = [["Symbol", "Date", "Time", "Type", "Outcome", "Lot Size", "Price", "SL", "TP", `PnL (${currency})`]];
     const rows = filteredTrades.map(t => {
       let dateObjStr = getTradeDate(t);
       let parsedDate = new Date();
@@ -233,7 +236,7 @@ export default function Dashboard() {
         t.entryPrice !== undefined ? t.entryPrice.toString() : "",
         t.stopLoss !== undefined ? t.stopLoss.toString() : "",
         t.takeProfit !== undefined ? t.takeProfit.toString() : "",
-        pnlValue !== undefined ? `$${pnlValue.toFixed(2)}` : ""
+        pnlValue !== undefined ? `${symbol}${pnlValue.toFixed(2)}` : ""
       ];
     });
 
@@ -347,7 +350,7 @@ export default function Dashboard() {
             <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">Current Equity</span>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
-                ${currentEquity.toFixed(2)}
+                {symbol}{currentEquity.toFixed(2)}
               </h1>
               <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                  {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
@@ -362,12 +365,13 @@ export default function Dashboard() {
                   }`}
                   title="Click to manage deposits and withdrawals"
                 >
-                  Net cashflow {netCashflow >= 0 ? "+" : "−"}${Math.abs(netCashflow).toFixed(2)}
+                  Net cashflow {netCashflow >= 0 ? "+" : "−"}{symbol}{Math.abs(netCashflow).toFixed(2)}
                 </Link>
               )}
             </div>
           </div>
           <div className="flex items-center gap-4 relative z-50">
+             <CurrencyToggle />
              <Button className="gap-2 shrink-0 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 font-mono transition-all hover:scale-105" onClick={() => navigate("/journal/new-trade")}>
                <Plus size={16} /> New Trade
              </Button>
