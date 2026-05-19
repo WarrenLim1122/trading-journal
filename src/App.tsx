@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import { NewTrade } from "./pages/NewTrade";
@@ -33,6 +34,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <CurrencyProvider>
       <div className="dark">
         <BrowserRouter>
           <Routes>
@@ -47,6 +49,7 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </div>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }
