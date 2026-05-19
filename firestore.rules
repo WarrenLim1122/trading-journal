@@ -40,6 +40,15 @@ service cloud.firestore {
              checkOptionalString(data, 'notes');
     }
 
+    function isValidCashflow(data, uid) {
+      return data.keys().hasAll(['userId', 'type', 'amount', 'date']) &&
+             data.userId == uid &&
+             data.type in ['deposit', 'withdrawal'] &&
+             data.amount is number && data.amount > 0 &&
+             data.date is string && data.date.size() <= 50 &&
+             checkOptionalString(data, 'note');
+    }
+
     function isValidUser(data) {
       // Validate user document creation/update
       return checkOptionalString(data, 'firstName') &&
@@ -79,6 +88,31 @@ service cloud.firestore {
                     ]);
 
       allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
+      }
+
+      match /cashflows/{cashflowId} {
+        allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(cashflowId);
+        allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+        allow create: if isSignedIn() &&
+                      request.auth.uid == userId &&
+                      isValidId(userId) && isValidId(cashflowId) &&
+                      isValidCashflow(incoming(), userId) &&
+                      incoming().createdAt == request.time &&
+                      incoming().updatedAt == request.time;
+
+        allow update: if isSignedIn() &&
+                      request.auth.uid == userId &&
+                      isValidId(userId) && isValidId(cashflowId) &&
+                      isValidCashflow(incoming(), userId) &&
+                      incoming().userId == existing().userId &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time &&
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'type', 'amount', 'date', 'note', 'updatedAt'
+                      ]);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(cashflowId);
       }
     }
   }
