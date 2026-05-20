@@ -1,4 +1,4 @@
-import { collection, doc, query, getDocs, updateDoc, deleteDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, query, getDocs, updateDoc, deleteDoc, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { Cashflow } from "../types/cashflow";
 import { v4 as uuidv4 } from "uuid";
@@ -77,6 +77,23 @@ export const cashflowService = {
     const path = `users/${userId}/cashflows/${id}`;
     try {
       await deleteDoc(doc(db, path));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  deleteCashflowsBatch: async (userId: string, cashflowIds: string[]): Promise<void> => {
+    const path = `users/${userId}/cashflows (batch ${cashflowIds.length})`;
+    try {
+      const CHUNK = 500;
+      for (let i = 0; i < cashflowIds.length; i += CHUNK) {
+        const chunk = cashflowIds.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach((id) =>
+          batch.delete(doc(db, "users", userId, "cashflows", id))
+        );
+        await batch.commit();
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
     }

@@ -1,4 +1,4 @@
-import { collection, doc, query, where, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, query, where, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { Trade } from "../types/trade";
 import { v4 as uuidv4 } from "uuid";
@@ -93,5 +93,22 @@ export const tradeService = {
       } catch (error) {
          handleFirestoreError(error, OperationType.DELETE, pathForDelete);
       }
-  }
+  },
+
+  deleteTradesBatch: async (userId: string, tradeIds: string[]): Promise<void> => {
+    const pathForDelete = `users/${userId}/trades (batch ${tradeIds.length})`;
+    try {
+      const CHUNK = 500;
+      for (let i = 0; i < tradeIds.length; i += CHUNK) {
+        const chunk = tradeIds.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach((id) =>
+          batch.delete(doc(db, "users", userId, "trades", id))
+        );
+        await batch.commit();
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, pathForDelete);
+    }
+  },
 };
