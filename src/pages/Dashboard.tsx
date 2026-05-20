@@ -11,7 +11,7 @@ import { ChartOverview } from "../components/dashboard/ChartOverview";
 import { WinsVsLosses } from "../components/dashboard/WinsVsLosses";
 import { CalendarView } from "../components/dashboard/CalendarView";
 import { EquityCurve } from "../components/dashboard/EquityCurve";
-import { Filter, Download, Plus } from "lucide-react";
+import { Filter, Download, Plus, Archive } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -23,6 +23,7 @@ import autoTable from "jspdf-autotable";
 import { Link, useNavigate } from "react-router-dom";
 
 import { TradeDetailDialog } from "../components/dashboard/TradeDetailDialog";
+import { PublishPhaseDialog } from "../components/dashboard/PublishPhaseDialog";
 import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome } from "../lib/tradeUtils";
 
 export default function Dashboard() {
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null);
   const [highlightedChartId, setHighlightedChartId] = useState<string | null>(null);
   const [selectedTradeForDetail, setSelectedTradeForDetail] = useState<Trade | null>(null);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
   // Global start balance state for dynamic calculation
   const [startBalance, setStartBalance] = useState(() => localStorage.getItem("startBalance") || "1000");
@@ -373,6 +375,14 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4 relative z-50">
              <CurrencyToggle />
+             <Button
+               variant="outline"
+               size="sm"
+               className="gap-2 shrink-0 font-mono"
+               onClick={() => setPublishDialogOpen(true)}
+             >
+               <Archive size={16} /> Publish phase
+             </Button>
              <Button className="gap-2 shrink-0 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 font-mono transition-all hover:scale-105" onClick={() => navigate("/journal/new-trade")}>
                <Plus size={16} /> New Trade
              </Button>
@@ -536,6 +546,15 @@ export default function Dashboard() {
           onOpenChange={(open) => {
             if (!open) setSelectedTradeForDetail(null);
           }}
+        />
+
+        <PublishPhaseDialog
+          open={publishDialogOpen}
+          onOpenChange={setPublishDialogOpen}
+          trades={trades}
+          cashflows={cashflows}
+          startBalance={startBalance}
+          onPublished={fetchTrades}
         />
     </div>
   );
