@@ -74,4 +74,7 @@ export interface Trade {
   importedAt?: any; // Firestore Timestamp
   rawMt5Data?: string | any; // Raw JSON payload or string
   rawTelegramMessage?: string;
+
+  // PropFirm phase tagging — undefined/null = active phase; set = archived phase id
+  propPhaseId?: string;
 }

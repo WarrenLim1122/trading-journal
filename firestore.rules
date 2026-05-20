@@ -1,3 +1,8 @@
+// Mirror these rules in the Firebase Console — that is the live source of
+// truth; the local file is for reference only. Pushing changes here does not
+// take effect on production until Firebase Console → Firestore → Rules →
+// Publish is run with the matching ruleset.
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -84,7 +89,7 @@ service cloud.firestore {
                       'pair', 'outcome', 'date', 'position', 'strategy', 'pnlPercentage',
                       'pnlAmount', 'imageUrl', 'entryPrice', 'exitPrice', 'closePrice',
                       'takeProfit', 'stopLoss', 'volume', 'ticket', 'notes', 'updatedAt',
-                      'closeReason'
+                      'closeReason', 'propPhaseId'
                     ]);
 
       allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
@@ -109,10 +114,14 @@ service cloud.firestore {
                       incoming().createdAt == existing().createdAt &&
                       incoming().updatedAt == request.time &&
                       incoming().diff(existing()).affectedKeys().hasOnly([
-                        'type', 'amount', 'date', 'note', 'updatedAt'
+                        'type', 'amount', 'date', 'note', 'updatedAt', 'propPhaseId'
                       ]);
 
         allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(cashflowId);
+      }
+
+      match /propPhases/{phaseId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
   }

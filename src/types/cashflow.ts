@@ -7,4 +7,7 @@ export interface Cashflow {
   note?: string;
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
+
+  // PropFirm phase tagging — undefined/null = active phase; set = archived phase id
+  propPhaseId?: string;
 }
