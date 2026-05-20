@@ -19,6 +19,12 @@ interface Props {
   sortKey?: keyof Trade;
   sortDirection?: "asc" | "desc";
   onSort?: (key: keyof Trade) => void;
+  /**
+   * When true, hide the per-row edit/delete action column.
+   * Used by the PropFirm phase detail page — archived trades are
+   * not editable from the phase view (delete the whole folder instead).
+   */
+  readOnly?: boolean;
 }
 
 interface SortableHeaderProps {
@@ -57,7 +63,7 @@ function SortableHeader({ label, sortKey, activeKey, direction, onSort, classNam
   );
 }
 
-export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort }: Props) {
+export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort, readOnly = false }: Props) {
   const { user } = useAuth();
   const { symbol: currencySymbol } = useCurrency();
 
@@ -99,13 +105,15 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
             <SortableHeader label="SL" sortKey="stopLoss" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
             <SortableHeader label="TP" sortKey="takeProfit" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
             <SortableHeader label="PnL" sortKey="pnlAmount" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
-            <TableHead className="font-mono text-muted-foreground text-center border-b-0 px-2 w-24">Action</TableHead>
+            {!readOnly && (
+              <TableHead className="font-mono text-muted-foreground text-center border-b-0 px-2 w-24">Action</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
           {trades.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={14} className="h-24 text-center text-muted-foreground font-mono">
+              <TableCell colSpan={readOnly ? 13 : 14} className="h-24 text-center text-muted-foreground font-mono">
                 No trades match your filters.
               </TableCell>
             </TableRow>
@@ -181,47 +189,53 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                 <TableCell className={`text-center font-mono font-bold border-r border-white/5 px-2 py-2.5 ${pnlValue && pnlValue > 0 ? "text-[#22c55e]" : pnlValue && pnlValue < 0 ? "text-[#ef4444]" : "text-muted-foreground"}`}>
                   {pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${currencySymbol}${Math.abs(pnlValue).toFixed(2)}` : "-"}
                 </TableCell>
-                <TableCell className="p-0 border-white/5 px-1 py-1">
-                  <div className="flex items-center justify-center gap-1 w-full h-full">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToEdit(trade); }} className="h-7 w-7 text-muted-foreground hover:text-white z-10 relative cursor-pointer">
-                      <Pencil size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToDelete(trade); }} className="h-7 w-7 text-muted-foreground hover:text-destructive z-10 relative cursor-pointer">
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                </TableCell>
+                {!readOnly && (
+                  <TableCell className="p-0 border-white/5 px-1 py-1">
+                    <div className="flex items-center justify-center gap-1 w-full h-full">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToEdit(trade); }} className="h-7 w-7 text-muted-foreground hover:text-white z-10 relative cursor-pointer">
+                        <Pencil size={14} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToDelete(trade); }} className="h-7 w-7 text-muted-foreground hover:text-destructive z-10 relative cursor-pointer">
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             )})
           )}
         </TableBody>
       </Table>
-        <EditTradeDialog 
-          trade={tradeToEdit} 
-          open={!!tradeToEdit} 
-          onOpenChange={(open) => !open && setTradeToEdit(null)} 
-          onTradeEdited={onTradeDeleted} 
-          trades={trades} 
-        />
+        {!readOnly && (
+          <>
+            <EditTradeDialog
+              trade={tradeToEdit}
+              open={!!tradeToEdit}
+              onOpenChange={(open) => !open && setTradeToEdit(null)}
+              onTradeEdited={onTradeDeleted}
+              trades={trades}
+            />
 
-        <Dialog open={!!tradeToDelete} onOpenChange={(open) => !open && setTradeToDelete(null)}>
-          <DialogContent className="sm:max-w-[425px] border-white/10 bg-background">
-            <DialogHeader>
-              <DialogTitle className="font-mono text-xl text-white">Confirm Deletion</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Are you sure you want to delete this trade? This action cannot be undone and will remove it from all overview sections.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setTradeToDelete(null)} disabled={isDeleting} className="font-mono">
-                Cancel
-              </Button>
-              <Button type="button" variant="destructive" onClick={confirmDelete} disabled={isDeleting} className="font-mono">
-                {isDeleting ? "Deleting..." : "Delete Trade"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <Dialog open={!!tradeToDelete} onOpenChange={(open) => !open && setTradeToDelete(null)}>
+              <DialogContent className="sm:max-w-[425px] border-white/10 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="font-mono text-xl text-white">Confirm Deletion</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    Are you sure you want to delete this trade? This action cannot be undone and will remove it from all overview sections.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+                  <Button type="button" variant="outline" onClick={() => setTradeToDelete(null)} disabled={isDeleting} className="font-mono">
+                    Cancel
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={confirmDelete} disabled={isDeleting} className="font-mono">
+                    {isDeleting ? "Deleting..." : "Delete Trade"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
       </div>
     </div>
   );

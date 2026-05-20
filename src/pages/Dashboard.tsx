@@ -108,6 +108,8 @@ export default function Dashboard() {
 
   const filteredTrades = useMemo(() => {
     return trades
+      // Active phase only — archived (tagged) trades live on the PropFirm phase detail page.
+      .filter(t => !t.propPhaseId)
       .filter(t => (filterOutcome === 'ALL' || t.outcome === filterOutcome))
       .filter(t => (filterPosition === 'ALL' || t.position === filterPosition))
       .filter(t => (filterStrategy === 'ALL' || t.strategy === filterStrategy))
