@@ -4,20 +4,32 @@ Standing rules for Claude Code when working in this repo.
 
 ## 🔔 Next session todo (added 2026-05-20)
 
-**PropFirm Journal feature — design approved, implementation pending.**
+**Two features designed in this session — both approved by Warren, neither implemented.** Implement in this recommended order:
 
-When Warren starts the next session, he wants you to implement the PropFirm tab. Before touching code, **read both** of these end-to-end:
+### 1. PropFirm Journal (larger, more invasive — do first)
 
-1. `docs/superpowers/specs/2026-05-20-propfirm-journal-handoff.md` — the comprehensive handoff: design decisions, data model, step-by-step Tasks A–G, risks, edge cases, definition of done. Treat every "Locked design decision" in §2 of that doc as final; do not re-litigate.
-2. This `CLAUDE.md` (you're reading it).
+Handoff: [`docs/superpowers/specs/2026-05-20-propfirm-journal-handoff.md`](docs/superpowers/specs/2026-05-20-propfirm-journal-handoff.md)
 
-Then execute Tasks A–G in that doc. If superpowers skills are available, use `superpowers:subagent-driven-development` for execution — one implementer subagent per task, plus spec-compliance + code-quality reviews — matching how the previous currency-toggle feature shipped.
+Adds a new sidebar tab + Publish-phase flow + per-phase folder detail page; changes the Dashboard equity formula to aggregate across all phases; adds a `propPhases` Firestore collection and a `propPhaseId` tag on every trade and cashflow. ~7 tasks (A–G). Read every "Locked design decision" in §2 of the handoff as final — do not re-litigate.
 
-**Two manual deploy gates at the end** (the handoff doc reminds you again):
-- Update the live Firestore rules in the Firebase Console (the local `firestore.rules` is reference only).
-- Bump the submodule in `personal-website` to ship to `warrenlimzf.com/journal`.
+### 2. Bulk Select & Delete (smaller — do after PropFirm)
 
-Once the feature ships, update the handoff doc's status field to `Implemented <date>` and **delete this section** from `CLAUDE.md`.
+Handoff: [`docs/superpowers/specs/2026-05-20-bulk-select-delete-handoff.md`](docs/superpowers/specs/2026-05-20-bulk-select-delete-handoff.md)
+
+Adds a `Select` toggle + checkbox column + bulk Delete action bar to the Dashboard's List Overview trade table and the Cashflows page. Shared `useBulkSelect` hook + `BulkActionBar` component + batch-delete service methods. ~5 tasks (A–E). The handoff explicitly notes how it interacts with the PropFirm feature's read-only mode — see its §7 Task D.
+
+### How to execute
+
+1. Read `CLAUDE.md` first (you're here).
+2. Read the relevant handoff doc end-to-end before touching code. The handoff is the source of truth — design + step-by-step plan + risks + definition of done all in one file.
+3. If superpowers skills are available, use `superpowers:subagent-driven-development` — one implementer subagent per task, plus spec-compliance + code-quality reviews — matching how the previous currency-toggle feature shipped.
+4. Auto-push policy applies per the "Auto-push" section below. Both handoffs include the manual deploy reminders.
+
+**Manual deploy gates at the end of each feature** (each handoff repeats these):
+- For PropFirm only: update the live Firestore rules in the Firebase Console (the local `firestore.rules` is reference only).
+- For both: bump the submodule in `personal-website` to ship to `warrenlimzf.com/journal`.
+
+Once a feature ships, update its handoff doc's status field to `Implemented <date>` and **remove its sub-section above** from this banner. When both are done, delete the whole "Next session todo" banner.
 
 ## What this repo is
 
