@@ -129,9 +129,10 @@ export default function Dashboard() {
   const { currentEquity, equityPercentChange } = useMemo(() => {
     const startNum = parseFloat(startBalance) || 0;
 
+    // Equity must reflect the user's true account balance — invariant to UI
+    // filters and to phase membership. Sum is order-independent, so no sort.
     let tradingPnl = 0;
-    const sortedTrades = [...filteredTrades].sort((a, b) => new Date(getTradeDate(a)).getTime() - new Date(getTradeDate(b)).getTime());
-    sortedTrades.forEach(trade => {
+    trades.forEach(trade => {
       const pnl = getTradePnl(trade);
       const pnlAmt = pnl !== undefined
         ? pnl
@@ -145,7 +146,7 @@ export default function Dashboard() {
     const percentChange = investedCapital > 0 ? (tradingPnl / investedCapital) * 100 : 0;
 
     return { currentEquity: balance, equityPercentChange: percentChange };
-  }, [filteredTrades, startBalance, netCashflow]);
+  }, [trades, startBalance, netCashflow]);
 
   const downloadCSV = () => {
     if (filteredTrades.length === 0) return;
