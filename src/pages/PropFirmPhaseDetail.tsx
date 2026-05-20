@@ -19,6 +19,7 @@ import { TradeDetailDialog } from "@journal/components/dashboard/TradeDetailDial
 import { PhaseMetadataBar } from "@journal/components/propfirm/PhaseMetadataBar";
 import { EditPhaseMetadataDialog } from "@journal/components/propfirm/EditPhaseMetadataDialog";
 import { DeletePhaseDialog } from "@journal/components/propfirm/DeletePhaseDialog";
+import { CashflowManager } from "@journal/components/cashflows/CashflowManager";
 
 export function PropFirmPhaseDetail() {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ export function PropFirmPhaseDetail() {
   const [selectedTradeForDetail, setSelectedTradeForDetail] = useState<Trade | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cashflowsOpen, setCashflowsOpen] = useState(false);
 
   // Refs for scroll-anchored tab nav.
   const chartsRef = useRef<HTMLDivElement>(null);
@@ -157,13 +159,22 @@ export function PropFirmPhaseDetail() {
                   variant="outline"
                   size="sm"
                   className="font-mono gap-2 shrink-0"
-                  onClick={() => alert("Cashflow management for this phase lands in Task F.")}
-                  title="Cashflow management for this phase lands in Task F"
+                  onClick={() => setCashflowsOpen((v) => !v)}
+                  aria-expanded={cashflowsOpen}
                 >
-                  <Wallet size={14} /> Manage cashflows
+                  <Wallet size={14} /> {cashflowsOpen ? "Hide cashflows" : "Manage cashflows"}
                 </Button>
               </div>
             </div>
+
+            {cashflowsOpen && (
+              <div className="scroll-mt-40">
+                <h2 className="text-4xl font-extrabold font-mono mb-8 text-white tracking-[0.2em] uppercase border-b border-border/50 pb-4">
+                  Cashflows
+                </h2>
+                <CashflowManager phaseId={phase.id} />
+              </div>
+            )}
 
             <div ref={chartsRef} className="scroll-mt-40">
               <h2 className="text-4xl font-extrabold font-mono mb-8 text-white tracking-[0.2em] uppercase border-b border-border/50 pb-4">Chart Overview</h2>
