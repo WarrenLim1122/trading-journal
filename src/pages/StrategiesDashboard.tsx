@@ -91,7 +91,7 @@ export function StrategiesDashboard() {
                     <div className="bg-black/40 p-3 rounded text-center">
                       <p className="text-xs text-muted-foreground uppercase mb-1">Total PnL</p>
                       <p className={`text-xl font-bold font-mono ${strat.totalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {strat.totalProfit >= 0 ? "+" : ""}{symbol}{strat.totalProfit.toFixed(2)}
+                        {strat.totalProfit >= 0 ? "+" : "-"}{symbol}{Math.abs(strat.totalProfit).toFixed(2)}
                       </p>
                     </div>
                   </div>

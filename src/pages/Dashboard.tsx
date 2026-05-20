@@ -236,7 +236,7 @@ export default function Dashboard() {
         t.entryPrice !== undefined ? t.entryPrice.toString() : "",
         t.stopLoss !== undefined ? t.stopLoss.toString() : "",
         t.takeProfit !== undefined ? t.takeProfit.toString() : "",
-        pnlValue !== undefined ? `${symbol}${pnlValue.toFixed(2)}` : ""
+        pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${symbol}${Math.abs(pnlValue).toFixed(2)}` : ""
       ];
     });
 
@@ -350,7 +350,7 @@ export default function Dashboard() {
             <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">Current Equity</span>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
-                {symbol}{currentEquity.toFixed(2)}
+                {currentEquity < 0 ? "-" : ""}{symbol}{Math.abs(currentEquity).toFixed(2)}
               </h1>
               <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                  {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
