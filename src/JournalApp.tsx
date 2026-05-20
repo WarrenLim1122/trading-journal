@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import { NewTrade } from "./pages/NewTrade";
 import { RiskCalculator } from "./pages/RiskCalculator";
 import { StrategiesDashboard } from "./pages/StrategiesDashboard";
+import { PropFirmDashboard } from "./pages/PropFirmDashboard";
 import { Settings } from "./pages/Settings";
 import { Cashflows } from "./pages/Cashflows";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -65,6 +66,14 @@ export default function JournalApp() {
             element={
               <ProtectedRoute>
                 <StrategiesDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="prop-firm"
+            element={
+              <ProtectedRoute>
+                <PropFirmDashboard />
               </ProtectedRoute>
             }
           />

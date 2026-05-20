@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import { NewTrade } from "./pages/NewTrade";
 import { RiskCalculator } from "./pages/RiskCalculator";
 import { StrategiesDashboard } from "./pages/StrategiesDashboard";
+import { PropFirmDashboard } from "./pages/PropFirmDashboard";
 import { Settings } from "./pages/Settings";
 import { Cashflows } from "./pages/Cashflows";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/new-trade" element={<ProtectedRoute><NewTrade /></ProtectedRoute>} />
             <Route path="/cashflows" element={<ProtectedRoute><Cashflows /></ProtectedRoute>} />
             <Route path="/strategies" element={<ProtectedRoute><StrategiesDashboard /></ProtectedRoute>} />
+            <Route path="/prop-firm" element={<ProtectedRoute><PropFirmDashboard /></ProtectedRoute>} />
             <Route path="/risk-calculator" element={<ProtectedRoute><RiskCalculator /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           </Routes>
