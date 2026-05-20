@@ -179,7 +179,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   {trade.takeProfit !== undefined ? trade.takeProfit : "-"}
                 </TableCell>
                 <TableCell className={`text-center font-mono font-bold border-r border-white/5 px-2 py-2.5 ${pnlValue && pnlValue > 0 ? "text-[#22c55e]" : pnlValue && pnlValue < 0 ? "text-[#ef4444]" : "text-muted-foreground"}`}>
-                  {pnlValue !== undefined ? `${currencySymbol}${pnlValue.toFixed(2)}` : "-"}
+                  {pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${currencySymbol}${Math.abs(pnlValue).toFixed(2)}` : "-"}
                 </TableCell>
                 <TableCell className="p-0 border-white/5 px-1 py-1">
                   <div className="flex items-center justify-center gap-1 w-full h-full">
