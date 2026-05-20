@@ -2,6 +2,23 @@
 
 Standing rules for Claude Code when working in this repo.
 
+## 🔔 Next session todo (added 2026-05-20)
+
+**PropFirm Journal feature — design approved, implementation pending.**
+
+When Warren starts the next session, he wants you to implement the PropFirm tab. Before touching code, **read both** of these end-to-end:
+
+1. `docs/superpowers/specs/2026-05-20-propfirm-journal-handoff.md` — the comprehensive handoff: design decisions, data model, step-by-step Tasks A–G, risks, edge cases, definition of done. Treat every "Locked design decision" in §2 of that doc as final; do not re-litigate.
+2. This `CLAUDE.md` (you're reading it).
+
+Then execute Tasks A–G in that doc. If superpowers skills are available, use `superpowers:subagent-driven-development` for execution — one implementer subagent per task, plus spec-compliance + code-quality reviews — matching how the previous currency-toggle feature shipped.
+
+**Two manual deploy gates at the end** (the handoff doc reminds you again):
+- Update the live Firestore rules in the Firebase Console (the local `firestore.rules` is reference only).
+- Bump the submodule in `personal-website` to ship to `warrenlimzf.com/journal`.
+
+Once the feature ships, update the handoff doc's status field to `Implemented <date>` and **delete this section** from `CLAUDE.md`.
+
 ## What this repo is
 
 A Vite + React 19 (TypeScript) trade-journal frontend that reads Firestore. **Source of truth** for the journal code. Currently embedded into [`personal-website`](https://github.com/WarrenLim1122/personal-website) at `src/journal/` via git submodule and served at `warrenlimzf.com/journal`. Will move to its own domain in the future — `src/App.tsx` is the standalone Vite entry that already supports that.
