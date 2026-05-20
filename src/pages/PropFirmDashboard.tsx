@@ -7,10 +7,8 @@ import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Card, CardContent } from "@journal/components/ui/card";
 import { propPhaseService } from "@journal/lib/propPhaseService";
 import { tradeService } from "@journal/lib/tradeService";
-import { cashflowService } from "@journal/lib/cashflowService";
 import { PropPhase, PropPhaseOutcome } from "@journal/types/propPhase";
 import { Trade } from "@journal/types/trade";
-import { Cashflow } from "@journal/types/cashflow";
 import { getTradePnl, getTradeDate } from "@journal/lib/tradeUtils";
 
 const outcomeBadgeClass: Record<PropPhaseOutcome, string> = {
@@ -34,7 +32,6 @@ export function PropFirmDashboard() {
   const { symbol } = useCurrency();
   const [phases, setPhases] = useState<PropPhase[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [cashflows, setCashflows] = useState<Cashflow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,12 +40,10 @@ export function PropFirmDashboard() {
     Promise.all([
       propPhaseService.getPhases(user.uid),
       tradeService.getTrades(user.uid),
-      cashflowService.getCashflows(user.uid),
-    ]).then(([p, t, c]) => {
+    ]).then(([p, t]) => {
       if (cancelled) return;
       setPhases(p);
       setTrades(t);
-      setCashflows(c);
       setLoading(false);
     });
     return () => {
@@ -59,7 +54,6 @@ export function PropFirmDashboard() {
   const phaseCards = useMemo(() => {
     return phases.map(phase => {
       const phaseTrades = trades.filter(t => t.propPhaseId === phase.id);
-      const phaseCashflows = cashflows.filter(c => c.propPhaseId === phase.id);
       const tradeCount = phaseTrades.length;
       const totalPnl = phaseTrades.reduce((s, t) => s + getTradePnl(t), 0);
 
@@ -79,10 +73,9 @@ export function PropFirmDashboard() {
         totalPnl,
         startDate,
         endDate,
-        phaseCashflowsCount: phaseCashflows.length, // not displayed; kept for future
       };
     });
-  }, [phases, trades, cashflows]);
+  }, [phases, trades]);
 
   return (
     <div className="mx-auto max-w-7xl relative pb-24">
