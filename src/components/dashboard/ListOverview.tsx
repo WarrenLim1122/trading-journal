@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Trade } from "../../types/trade";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { Trash2, Pencil, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
+import { Trash2, Pencil, ArrowUp, ArrowDown, ChevronsUpDown, CheckSquare } from "lucide-react";
 import { tradeService } from "../../lib/tradeService";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice } from "../../lib/tradeUtils";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
+import { useBulkSelect } from "@journal/lib/useBulkSelect";
+import { BulkActionBar } from "@journal/components/ui/BulkActionBar";
 
 interface Props {
   trades: Trade[];
@@ -25,6 +27,12 @@ interface Props {
    * not editable from the phase view (delete the whole folder instead).
    */
   readOnly?: boolean;
+  /**
+   * Called after a bulk delete completes so the caller can refresh
+   * its trade list. Distinct from `onTradeDeleted` (single-row delete)
+   * only for clarity — in practice both point to the same fetch fn.
+   */
+  onTradesChanged?: () => void;
 }
 
 interface SortableHeaderProps {
@@ -63,13 +71,35 @@ function SortableHeader({ label, sortKey, activeKey, direction, onSort, classNam
   );
 }
 
-export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort, readOnly = false }: Props) {
+export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort, readOnly = false, onTradesChanged }: Props) {
   const { user } = useAuth();
   const { symbol: currencySymbol } = useCurrency();
 
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const bulk = useBulkSelect(trades);
+  const showSelectAffordances = !readOnly;
+  const isSelectMode = showSelectAffordances && bulk.isSelectMode;
+  const masterCheckboxRef = useRef<HTMLInputElement | null>(null);
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  // Clear selection whenever the trades prop reference changes (filters / sort
+  // upstream produce a fresh array). The hook handles its own internal state.
+  useEffect(() => {
+    bulk.clearOnFilterChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trades]);
+
+  // Set indeterminate state on the master checkbox via DOM ref.
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate =
+        bulk.selectedCount > 0 && !bulk.isAllSelected;
+    }
+  }, [bulk.selectedCount, bulk.isAllSelected]);
 
   const confirmDelete = async () => {
     if (user && tradeToDelete) {
@@ -86,12 +116,85 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
     }
   };
 
+  const bulkSelectedCount = bulk.selectedCount;
+  const confirmBulkDelete = async () => {
+    if (!user || bulkSelectedCount === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      await tradeService.deleteTradesBatch(user.uid, Array.from(bulk.selectedIds));
+      onTradesChanged?.();
+      bulk.exit();
+      setIsBulkConfirmOpen(false);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      alert(`Failed to delete trades: ${msg}`);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   return (
     <div className="rounded-xl border border-white/10 bg-card pb-2">
       <div className="w-full overflow-x-auto custom-scrollbar pb-2">
+        {showSelectAffordances && (
+          <div className="flex items-center justify-between gap-3 px-3 pt-3 pb-2">
+            <div className="text-xs font-mono text-muted-foreground">
+              {isSelectMode && bulk.selectedCount === 0 ? (
+                <span>
+                  Select rows or{" "}
+                  <button
+                    type="button"
+                    onClick={bulk.exit}
+                    className="underline underline-offset-2 hover:text-foreground cursor-pointer"
+                  >
+                    Cancel selection
+                  </button>
+                </span>
+              ) : null}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => (isSelectMode ? bulk.exit() : bulk.enter())}
+              disabled={!isSelectMode && trades.length === 0}
+              title={trades.length === 0 ? "Nothing to select" : undefined}
+              className="font-mono gap-2"
+            >
+              {isSelectMode ? (
+                "Cancel"
+              ) : (
+                <>
+                  <CheckSquare size={14} /> Select
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        {isSelectMode && bulk.selectedCount > 0 && (
+          <div className="px-3">
+            <BulkActionBar
+              count={bulk.selectedCount}
+              onDelete={() => setIsBulkConfirmOpen(true)}
+              onCancel={bulk.exit}
+              itemLabel="trade"
+            />
+          </div>
+        )}
         <Table className="text-xs w-full min-w-[1640px]">
         <TableHeader className="bg-muted/50">
           <TableRow className="border-b border-white/10 hover:bg-transparent">
+            {isSelectMode && (
+              <TableHead className="font-mono text-muted-foreground w-8 text-center border-r border-white/5 border-b-0 h-10 px-1">
+                <input
+                  ref={masterCheckboxRef}
+                  type="checkbox"
+                  checked={bulk.isAllSelected}
+                  onChange={bulk.toggleAll}
+                  className="cursor-pointer accent-primary"
+                  aria-label="Select all trades"
+                />
+              </TableHead>
+            )}
             <TableHead className="font-mono text-muted-foreground w-8 text-center border-r border-white/5 border-b-0 h-10 px-1">#</TableHead>
             <SortableHeader label="Symbol" sortKey="pair" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
             <SortableHeader label="Ticket" sortKey="ticket" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-28" />
@@ -113,7 +216,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
         <TableBody>
           {trades.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={readOnly ? 13 : 14} className="h-24 text-center text-muted-foreground font-mono">
+              <TableCell colSpan={readOnly ? 13 : isSelectMode ? 15 : 14} className="h-24 text-center text-muted-foreground font-mono">
                 No trades match your filters.
               </TableCell>
             </TableRow>
@@ -128,8 +231,35 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
               let parsedDate = new Date();
               try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
               
+              const isRowSelected = bulk.selectedIds.has(trade.id);
               return (
-              <TableRow key={trade.id} className="border-b border-white/5 hover:bg-muted/20 group cursor-pointer" onClick={() => onRowClick && onRowClick(trade.id)}>
+              <TableRow
+                key={trade.id}
+                className={`border-b border-white/5 group cursor-pointer ${
+                  isSelectMode && isRowSelected
+                    ? "bg-primary/5 hover:bg-primary/10"
+                    : "hover:bg-muted/20"
+                }`}
+                onClick={() => {
+                  if (isSelectMode) {
+                    bulk.toggle(trade.id);
+                    return;
+                  }
+                  onRowClick && onRowClick(trade.id);
+                }}
+              >
+                {isSelectMode && (
+                  <TableCell className="text-center border-r border-white/5 px-1 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={isRowSelected}
+                      onChange={() => bulk.toggle(trade.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="cursor-pointer accent-primary"
+                      aria-label="Select trade"
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-mono text-muted-foreground text-center border-r border-white/5 px-1 py-2.5">
                   {i + 1}
                 </TableCell>
@@ -230,6 +360,51 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   </Button>
                   <Button type="button" variant="destructive" onClick={confirmDelete} disabled={isDeleting} className="font-mono">
                     {isDeleting ? "Deleting..." : "Delete Trade"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={isBulkConfirmOpen}
+              onOpenChange={(open) => {
+                if (!isBulkDeleting) setIsBulkConfirmOpen(open);
+              }}
+            >
+              <DialogContent className="sm:max-w-[425px] border-white/10 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="font-mono text-xl text-white">
+                    Delete {bulkSelectedCount} {bulkSelectedCount === 1 ? "trade" : "trades"}?
+                  </DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    This cannot be undone.
+                  </DialogDescription>
+                  {bulkSelectedCount > 50 && (
+                    <p className="mt-2 text-sm text-[#f59e0b]">
+                      You're about to delete {bulkSelectedCount} trades. This is a large action — double-check before confirming.
+                    </p>
+                  )}
+                </DialogHeader>
+                <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsBulkConfirmOpen(false)}
+                    disabled={isBulkDeleting}
+                    className="font-mono"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={confirmBulkDelete}
+                    disabled={isBulkDeleting || bulkSelectedCount === 0}
+                    className="font-mono"
+                  >
+                    {isBulkDeleting
+                      ? "Deleting..."
+                      : `Delete ${bulkSelectedCount} ${bulkSelectedCount === 1 ? "item" : "items"}`}
                   </Button>
                 </DialogFooter>
               </DialogContent>

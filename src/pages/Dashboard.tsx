@@ -511,6 +511,7 @@ export default function Dashboard() {
               <ListOverview
                 trades={filteredTrades}
                 onTradeDeleted={fetchTrades}
+                onTradesChanged={fetchTrades}
                 onRowClick={(id) => {
                   const t = filteredTrades.find(trade => trade.id === id);
                   if (t) setSelectedTradeForDetail(t);
