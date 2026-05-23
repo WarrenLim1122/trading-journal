@@ -24,7 +24,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { TradeDetailDialog } from "../components/dashboard/TradeDetailDialog";
 import { PublishPhaseDialog } from "../components/dashboard/PublishPhaseDialog";
-import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome } from "../lib/tradeUtils";
+import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome, getTradeAccount } from "../lib/tradeUtils";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [filterOutcome, setFilterOutcome] = useState("ALL");
   const [filterPosition, setFilterPosition] = useState("ALL");
   const [filterStrategy, setFilterStrategy] = useState("ALL");
+  // Account scope (Issue 7) — keep SGD personal and USD prop P&L from being summed.
+  const [filterAccount, setFilterAccount] = useState("ALL");
   const [sortKey, setSortKey] = useState<keyof Trade>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null);
@@ -110,6 +112,7 @@ export default function Dashboard() {
     return trades
       // Active phase only — archived (tagged) trades live on the PropFirm phase detail page.
       .filter(t => !t.propPhaseId)
+      .filter(t => (filterAccount === 'ALL' || getTradeAccount(t) === filterAccount))
       .filter(t => (filterOutcome === 'ALL' || t.outcome === filterOutcome))
       .filter(t => (filterPosition === 'ALL' || t.position === filterPosition))
       .filter(t => (filterStrategy === 'ALL' || t.strategy === filterStrategy))
@@ -128,21 +131,24 @@ export default function Dashboard() {
         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
         return 0;
       });
-  }, [trades, filterPair, filterOutcome, filterPosition, filterStrategy, sortKey, sortDirection]);
+  }, [trades, filterAccount, filterPair, filterOutcome, filterPosition, filterStrategy, sortKey, sortDirection]);
 
   const { currentEquity, equityPercentChange } = useMemo(() => {
     const startNum = parseFloat(startBalance) || 0;
 
-    // Equity must reflect the user's true account balance — invariant to UI
-    // filters and to phase membership. Sum is order-independent, so no sort.
+    // Equity reflects the user's true balance — invariant to the symbol/outcome
+    // filters, but scoped to the selected ACCOUNT so SGD personal and USD prop
+    // P&L are never summed together (Issue 7). Sum is order-independent, so no sort.
     let tradingPnl = 0;
-    trades.forEach(trade => {
-      const pnl = getTradePnl(trade);
-      const pnlAmt = pnl !== undefined
-        ? pnl
-        : (trade.pnlPercentage && startNum > 0 ? startNum * (trade.pnlPercentage / 100) : 0);
-      tradingPnl += pnlAmt;
-    });
+    trades
+      .filter(trade => filterAccount === 'ALL' || getTradeAccount(trade) === filterAccount)
+      .forEach(trade => {
+        const pnl = getTradePnl(trade);
+        const pnlAmt = pnl !== undefined
+          ? pnl
+          : (trade.pnlPercentage && startNum > 0 ? startNum * (trade.pnlPercentage / 100) : 0);
+        tradingPnl += pnlAmt;
+      });
 
     const balance = startNum + netCashflow + tradingPnl;
     // % change measures trading performance on capital actually invested (start + deposits − withdrawals).
@@ -150,7 +156,17 @@ export default function Dashboard() {
     const percentChange = investedCapital > 0 ? (tradingPnl / investedCapital) * 100 : 0;
 
     return { currentEquity: balance, equityPercentChange: percentChange };
-  }, [trades, startBalance, netCashflow]);
+  }, [trades, startBalance, netCashflow, filterAccount]);
+
+  // When "All Accounts" mixes more than one currency, the Current Equity total and
+  // section aggregates are summing across currencies (e.g. SGD + USD) — warn and
+  // nudge the user to scope to a single account. (Issue 7)
+  const mixedCurrency = useMemo(() => {
+    if (filterAccount !== "ALL") return false;
+    const seen = new Set<string>();
+    trades.forEach(t => { if (!t.propPhaseId && t.accountCurrency) seen.add(t.accountCurrency.toUpperCase()); });
+    return seen.size > 1;
+  }, [trades, filterAccount]);
 
   const downloadCSV = () => {
     if (filteredTrades.length === 0) return;
@@ -360,6 +376,16 @@ export default function Dashboard() {
               <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                  {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
               </span>
+              {mixedCurrency && (
+                <button
+                  type="button"
+                  onClick={() => updateWithScrollRestoration(() => setFilterAccount("prop"))}
+                  className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border border-[#f59e0b]/50 text-[#f59e0b] hover:bg-[#f59e0b]/10 transition-colors"
+                  title="This total mixes more than one account currency (e.g. SGD + USD). Click to scope to a single account."
+                >
+                  ⚠ Mixed currencies — filter by account
+                </button>
+              )}
               {netCashflow !== 0 && (
                 <Link
                   to="/journal/cashflows"
@@ -410,6 +436,20 @@ export default function Dashboard() {
                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Filter size={16} />
                       <span className="text-xs font-mono uppercase font-semibold">Filter:</span>
+                   </div>
+                   <div className="flex flex-col gap-0.5">
+                     <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Account</span>
+                     <Select value={filterAccount} onValueChange={(val) => updateWithScrollRestoration(() => setFilterAccount(val))}>
+                       <SelectTrigger className="h-8 w-[130px] bg-black/40 text-xs font-mono">
+                         <SelectValue placeholder="All" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="ALL">All Accounts</SelectItem>
+                         <SelectItem value="personal">Personal (SGD)</SelectItem>
+                         <SelectItem value="prop">Prop (USD)</SelectItem>
+                         <SelectItem value="manual">Manual</SelectItem>
+                       </SelectContent>
+                     </Select>
                    </div>
                    <div className="flex flex-col gap-0.5">
                      <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Symbol</span>

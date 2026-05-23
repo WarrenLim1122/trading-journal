@@ -71,11 +71,27 @@ export function formatTradeDate(iso: string | undefined | null): string {
 // Use it so a trade's P&L is labelled in its own currency rather than one global
 // toggle. Falls back to the provided symbol (the global toggle) for manual trades
 // that have no accountCurrency.
-const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", SGD: "S$", EUR: "€", GBP: "£" };
+// "SGD " (ISO code prefix) matches the label Warren chose for the alerts/journal.
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", SGD: "SGD ", EUR: "€", GBP: "£" };
 
 export function tradeCurrencySymbol(trade: Trade, fallback = "$"): string {
   const code = (trade.accountCurrency || "").toUpperCase();
   return CURRENCY_SYMBOLS[code] || fallback;
+}
+
+// ── Per-account separation (Issue 7 follow-up) ────────────────────────────────
+// The personal (SGD) and prop (USD) accounts are distinct; their P&L must never be
+// summed together. Bot trades carry the worker name in `tags` (["bot","arbitrage",
+// "personal"|"prop"]); fall back to accountType, else treat as a manual entry.
+export type TradeAccount = "personal" | "prop" | "manual";
+
+export function getTradeAccount(trade: Trade): TradeAccount {
+  const tags = (trade.tags || []).map((t) => String(t).toLowerCase());
+  if (tags.includes("prop")) return "prop";
+  if (tags.includes("personal")) return "personal";
+  if ((trade.accountType || "").toLowerCase() === "prop") return "prop";
+  if ((trade.accountType || "").toLowerCase() === "personal") return "personal";
+  return "manual";
 }
 
 export function formatTradeTime(iso: string | undefined | null): string {

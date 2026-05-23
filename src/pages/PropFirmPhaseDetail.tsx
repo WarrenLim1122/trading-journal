@@ -29,7 +29,7 @@ import { DeletePhaseDialog } from "@journal/components/propfirm/DeletePhaseDialo
 import { CashflowManager } from "@journal/components/cashflows/CashflowManager";
 import {
   getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection,
-  getTradeOutcome, getTradeDisplayOutcome,
+  getTradeOutcome, getTradeDisplayOutcome, getTradeAccount,
 } from "@journal/lib/tradeUtils";
 
 export function PropFirmPhaseDetail() {
@@ -50,6 +50,7 @@ export function PropFirmPhaseDetail() {
   const [filterOutcome, setFilterOutcome] = useState("ALL");
   const [filterPosition, setFilterPosition] = useState("ALL");
   const [filterStrategy, setFilterStrategy] = useState("ALL");
+  const [filterAccount, setFilterAccount] = useState("ALL");
   const [sortKey, setSortKey] = useState<keyof Trade>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null);
@@ -110,6 +111,7 @@ export function PropFirmPhaseDetail() {
   // Apply filters + sort to this phase's trades (same logic as the Dashboard).
   const filteredTrades = useMemo(() => {
     return phaseTrades
+      .filter((t) => (filterAccount === "ALL" || getTradeAccount(t) === filterAccount))
       .filter((t) => (filterOutcome === "ALL" || t.outcome === filterOutcome))
       .filter((t) => (filterPosition === "ALL" || t.position === filterPosition))
       .filter((t) => (filterStrategy === "ALL" || t.strategy === filterStrategy))
@@ -128,7 +130,7 @@ export function PropFirmPhaseDetail() {
         if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
         return 0;
       });
-  }, [phaseTrades, filterPair, filterOutcome, filterPosition, filterStrategy, sortKey, sortDirection]);
+  }, [phaseTrades, filterAccount, filterPair, filterOutcome, filterPosition, filterStrategy, sortKey, sortDirection]);
 
   // Drop a stale filter selection if its value no longer exists in this phase.
   useEffect(() => {
@@ -311,6 +313,18 @@ export function PropFirmPhaseDetail() {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Filter size={16} />
                   <span className="text-xs font-mono uppercase font-semibold">Filter:</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Account</span>
+                  <Select value={filterAccount} onValueChange={(val) => updateWithScrollRestoration(() => setFilterAccount(val))}>
+                    <SelectTrigger className="h-8 w-[130px] bg-black/40 text-xs font-mono"><SelectValue placeholder="All" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Accounts</SelectItem>
+                      <SelectItem value="personal">Personal (SGD)</SelectItem>
+                      <SelectItem value="prop">Prop (USD)</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60 pl-0.5">Symbol</span>
