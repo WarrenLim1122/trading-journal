@@ -3,7 +3,7 @@ import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { cn } from "../../lib/utils";
 import { Trade } from "../../types/trade";
-import { getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome, getTradePnl, getTradeClosePrice, getTradeDate } from "../../lib/tradeUtils";
+import { getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome, getTradePnl, getTradeClosePrice, getTradeDate, formatPrice } from "../../lib/tradeUtils";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Box, Activity, DollarSign, Image as ImageIcon, Expand } from "lucide-react";
 import { Tag as TagIcon } from "lucide-react";
@@ -129,11 +129,11 @@ export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDial
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-muted-foreground tracking-wide">Entry</span>
-                    <span className="font-mono text-base font-semibold">{trade.entryPrice || "-"}</span>
+                    <span className="font-mono text-base font-semibold">{formatPrice(symbol, trade.entryPrice)}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-muted-foreground tracking-wide">Exit</span>
-                    <span className="font-mono text-base font-semibold">{closePrice || "-"}</span>
+                    <span className="font-mono text-base font-semibold">{formatPrice(symbol, closePrice)}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-muted-foreground tracking-wide">Volume</span>
@@ -156,11 +156,11 @@ export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDial
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-red-400 tracking-wide">Stop Loss</span>
-                    <span className="font-mono text-base font-semibold">{trade.stopLoss || "-"}</span>
+                    <span className="font-mono text-base font-semibold">{formatPrice(symbol, trade.stopLoss)}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-green-400 tracking-wide">Take Profit</span>
-                    <span className="font-mono text-base font-semibold">{trade.takeProfit || "-"}</span>
+                    <span className="font-mono text-base font-semibold">{formatPrice(symbol, trade.takeProfit)}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs uppercase text-muted-foreground tracking-wide">Gross PnL</span>

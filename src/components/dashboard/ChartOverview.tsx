@@ -1,10 +1,9 @@
 import React from "react";
 import { Trade } from "../../types/trade";
 import { Card, CardContent } from "../ui/card";
-import { format } from "date-fns";
 import { ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "../ui/dialog";
-import { getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeDate } from "../../lib/tradeUtils";
+import { getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeDate, formatTradeDate } from "../../lib/tradeUtils";
 
 interface Props {
   trades: Trade[];
@@ -35,9 +34,7 @@ export function ChartOverview({ trades, startBalance = 1000, selectedChartId, on
         const symbol = getTradeSymbol(trade);
         const pnlResult = getTradePnl(trade);
         const dateObjStr = getTradeDate(trade);
-        let parsedDate = new Date();
-        try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
-        
+
         const screenshotUrl = trade.outcomeScreenshotUrl || trade.rrChartUrl || trade.imageUrl;
 
         const baseGlow = outcomeRaw === 'WIN' ? 'border-[#22c55e]/80 shadow-[0_0_20px_rgba(34,197,94,0.4),0_0_60px_rgba(34,197,94,0.15)]' :
@@ -121,7 +118,7 @@ export function ChartOverview({ trades, startBalance = 1000, selectedChartId, on
                      );
                   })()}
                 </div>
-                <span className="text-xs text-muted-foreground font-mono leading-none translate-y-px">{format(parsedDate, "MMM d, yyyy")}</span>
+                <span className="text-xs text-muted-foreground font-mono leading-none translate-y-px">{formatTradeDate(dateObjStr)}</span>
              </div>
              {(trade.strategyName || trade.strategy) && (
                <div className="inline-flex bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-mono border border-blue-500/30">

@@ -5,11 +5,10 @@ import { Button } from "../ui/button";
 import { Trash2, Pencil, ArrowUp, ArrowDown, ChevronsUpDown, CheckSquare } from "lucide-react";
 import { tradeService } from "../../lib/tradeService";
 import { useAuth } from "../../contexts/AuthContext";
-import { format } from "date-fns";
 import { EditTradeDialog } from "./EditTradeDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
-import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice } from "../../lib/tradeUtils";
+import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice, formatPrice, formatTradeDate, formatTradeTime } from "../../lib/tradeUtils";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { useBulkSelect } from "@journal/lib/useBulkSelect";
 import { BulkActionBar } from "@journal/components/ui/BulkActionBar";
@@ -228,9 +227,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
               const direction = getTradeDirection(trade);
               const outcomeDisplay = getTradeDisplayOutcome(trade);
               const outcomeRaw = getTradeOutcome(trade);
-              let parsedDate = new Date();
-              try { if (dateObjStr) parsedDate = new Date(dateObjStr); } catch(e) {}
-              
+
               const isRowSelected = bulk.selectedIds.has(trade.id);
               return (
               <TableRow
@@ -270,10 +267,10 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   {trade.ticket !== undefined ? trade.ticket : "-"}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center border-r border-white/5 px-2 py-2.5 whitespace-nowrap">
-                  {format(parsedDate, "MMM d, yyyy")}
+                  {formatTradeDate(dateObjStr)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center border-r border-white/5 px-2 py-2.5 whitespace-nowrap">
-                  {format(parsedDate, "HH:mm")}
+                  {formatTradeTime(dateObjStr)}
                 </TableCell>
                 <TableCell className="text-center border-r border-white/5 px-2 py-2.5">
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] uppercase font-bold ${
@@ -308,13 +305,13 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   {trade.volume !== undefined ? trade.volume : "-"}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-1 py-2.5">
-                  {trade.entryPrice !== undefined ? trade.entryPrice : "-"}
+                  {formatPrice(symbol, trade.entryPrice)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-1 py-2.5">
-                  {trade.stopLoss !== undefined ? trade.stopLoss : "-"}
+                  {formatPrice(symbol, trade.stopLoss)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-1 py-2.5">
-                  {trade.takeProfit !== undefined ? trade.takeProfit : "-"}
+                  {formatPrice(symbol, trade.takeProfit)}
                 </TableCell>
                 <TableCell className={`text-center font-mono font-bold border-r border-white/5 px-2 py-2.5 ${pnlValue && pnlValue > 0 ? "text-[#22c55e]" : pnlValue && pnlValue < 0 ? "text-[#ef4444]" : "text-muted-foreground"}`}>
                   {pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${currencySymbol}${Math.abs(pnlValue).toFixed(2)}` : "-"}
