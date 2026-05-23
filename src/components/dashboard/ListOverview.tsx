@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { EditTradeDialog } from "./EditTradeDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
-import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice, formatPrice, formatTradeDate, formatTradeTime } from "../../lib/tradeUtils";
+import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice, formatPrice, formatTradeDate, formatTradeTime, tradeCurrencySymbol } from "../../lib/tradeUtils";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { useBulkSelect } from "@journal/lib/useBulkSelect";
 import { BulkActionBar } from "@journal/components/ui/BulkActionBar";
@@ -314,7 +314,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   {formatPrice(symbol, trade.takeProfit)}
                 </TableCell>
                 <TableCell className={`text-center font-mono font-bold border-r border-white/5 px-2 py-2.5 ${pnlValue && pnlValue > 0 ? "text-[#22c55e]" : pnlValue && pnlValue < 0 ? "text-[#ef4444]" : "text-muted-foreground"}`}>
-                  {pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${currencySymbol}${Math.abs(pnlValue).toFixed(2)}` : "-"}
+                  {pnlValue !== undefined ? `${pnlValue < 0 ? "-" : ""}${tradeCurrencySymbol(trade, currencySymbol)}${Math.abs(pnlValue).toFixed(2)}` : "-"}
                 </TableCell>
                 {!readOnly && (
                   <TableCell className="p-0 border-white/5 px-1 py-1">

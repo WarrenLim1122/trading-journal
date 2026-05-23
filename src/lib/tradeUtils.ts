@@ -66,6 +66,18 @@ export function formatTradeDate(iso: string | undefined | null): string {
   }).format(d);
 }
 
+// ── Per-account currency symbol (Issue 7) ─────────────────────────────────────
+// Each bot trade stores its MT5 account currency (personal = SGD, prop = USD).
+// Use it so a trade's P&L is labelled in its own currency rather than one global
+// toggle. Falls back to the provided symbol (the global toggle) for manual trades
+// that have no accountCurrency.
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", SGD: "S$", EUR: "€", GBP: "£" };
+
+export function tradeCurrencySymbol(trade: Trade, fallback = "$"): string {
+  const code = (trade.accountCurrency || "").toUpperCase();
+  return CURRENCY_SYMBOLS[code] || fallback;
+}
+
 export function formatTradeTime(iso: string | undefined | null): string {
   if (!iso) return "-";
   const d = new Date(iso);
