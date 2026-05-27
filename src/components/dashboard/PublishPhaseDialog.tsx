@@ -24,6 +24,12 @@ interface Props {
   trades: Trade[];
   cashflows: Cashflow[];
   startBalance: string;
+  // Snapshots of Σuntagged P&L / cashflow at the moment the user last reset
+  // the baseline. Subtracted from the live untagged sums so the published
+  // phase's ending balance reflects only post-reset activity — matching what
+  // the Dashboard shows as Current Equity.
+  anchorPnl: number;
+  anchorCashflow: number;
   // Called after a successful publish. Receives the just-closed phase's ending
   // balance so the Dashboard can carry it over as the new active phase's baseline
   // (which lets the next phase start at +0.00%).
@@ -56,6 +62,8 @@ export function PublishPhaseDialog({
   trades,
   cashflows,
   startBalance,
+  anchorPnl,
+  anchorCashflow,
   onPublished,
 }: Props) {
   const { user } = useAuth();
@@ -84,7 +92,11 @@ export function PublishPhaseDialog({
       (s, c) => s + (c.type === "deposit" ? c.amount : -c.amount),
       0,
     );
-    const previewEnding = previewStarting + untaggedPnl + untaggedCash;
+    // Anchors subtract pre-reset history so the ending balance matches the
+    // Dashboard's headline Current Equity.
+    const effectivePnl = untaggedPnl - anchorPnl;
+    const effectiveCash = untaggedCash - anchorCashflow;
+    const previewEnding = previewStarting + effectivePnl + effectiveCash;
 
     return {
       tradesCount: untaggedTrades.length,
@@ -92,7 +104,7 @@ export function PublishPhaseDialog({
       previewStarting,
       previewEnding,
     };
-  }, [trades, cashflows, startNum]);
+  }, [trades, cashflows, startNum, anchorPnl, anchorCashflow]);
 
   const resetForm = () => {
     setName("");
@@ -118,6 +130,7 @@ export function PublishPhaseDialog({
         trades,
         cashflows,
         startNum,
+        { pnl: anchorPnl, cashflow: anchorCashflow },
       );
       const newBaseline = summary.previewEnding;
       resetForm();

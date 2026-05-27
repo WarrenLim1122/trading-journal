@@ -52,6 +52,14 @@ export default function Dashboard() {
   // equity for the current (unpublished) active phase. Editable inline via the
   // header pencil and via Settings / EquityCurve.
   const [startBalance, setStartBalance] = useState(() => localStorage.getItem("startBalance") || "1000");
+  // Anchors snapshot Σ(untagged trade P&L) and Σ(untagged cashflow net) at the
+  // moment the user re-set the equity, so the active-phase math ignores
+  // pre-reset history. Without them, typing a new equity into the header pencil
+  // would still inherit the displayed P&L from older trades. The trades
+  // themselves stay in the journal — only the active-phase headline math
+  // pretends they don't exist.
+  const [anchorPnl, setAnchorPnl] = useState(() => localStorage.getItem("baselineAnchorPnl") || "0");
+  const [anchorCashflow, setAnchorCashflow] = useState(() => localStorage.getItem("baselineAnchorCashflow") || "0");
   const [isEditingEquity, setIsEditingEquity] = useState(false);
   const [equityDraft, setEquityDraft] = useState(startBalance);
 
@@ -67,6 +75,14 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem("startBalance", startBalance);
   }, [startBalance]);
+
+  useEffect(() => {
+    localStorage.setItem("baselineAnchorPnl", anchorPnl);
+  }, [anchorPnl]);
+
+  useEffect(() => {
+    localStorage.setItem("baselineAnchorCashflow", anchorCashflow);
+  }, [anchorCashflow]);
 
   useEffect(() => {
     const handleStartBalanceUpdate = () => setStartBalance(localStorage.getItem("startBalance") || "1000");
@@ -139,12 +155,15 @@ export default function Dashboard() {
 
   const { currentEquity, equityPercentChange } = useMemo(() => {
     const startNum = parseFloat(startBalance) || 0;
+    const anchorPnlNum = parseFloat(anchorPnl) || 0;
+    const anchorCashflowNum = parseFloat(anchorCashflow) || 0;
 
     // Equity reflects the user's true balance — invariant to the symbol/outcome
     // filters, but scoped to the selected ACCOUNT so SGD personal and USD prop
     // P&L are never summed together (Issue 7). Sum is order-independent, so no sort.
     let tradingPnl = 0;
     trades
+      .filter(t => !t.propPhaseId)
       .filter(trade => filterAccount === 'ALL' || getTradeAccount(trade) === filterAccount)
       .forEach(trade => {
         const pnl = getTradePnl(trade);
@@ -154,13 +173,19 @@ export default function Dashboard() {
         tradingPnl += pnlAmt;
       });
 
-    const balance = startNum + netCashflow + tradingPnl;
+    // Subtract anchors so pre-reset trades/cashflows are ignored for active-phase
+    // metrics. Anchors are 0 by default and are snapshotted only when the user
+    // explicitly re-sets the equity (header pencil → confirm dialog).
+    const effectivePnl = tradingPnl - anchorPnlNum;
+    const effectiveCashflow = netCashflow - anchorCashflowNum;
+
+    const balance = startNum + effectiveCashflow + effectivePnl;
     // % change measures trading performance on capital actually invested (start + deposits − withdrawals).
-    const investedCapital = startNum + netCashflow;
-    const percentChange = investedCapital > 0 ? (tradingPnl / investedCapital) * 100 : 0;
+    const investedCapital = startNum + effectiveCashflow;
+    const percentChange = investedCapital > 0 ? (effectivePnl / investedCapital) * 100 : 0;
 
     return { currentEquity: balance, equityPercentChange: percentChange };
-  }, [trades, startBalance, netCashflow, filterAccount]);
+  }, [trades, startBalance, netCashflow, filterAccount, anchorPnl, anchorCashflow]);
 
   // When "All Accounts" mixes more than one currency, the Current Equity total and
   // section aggregates are summing across currencies (e.g. SGD + USD) — warn and
@@ -369,14 +394,46 @@ export default function Dashboard() {
   };
 
   const handleStartEditEquity = () => {
-    setEquityDraft(startBalance);
+    // Pre-fill with the currently displayed equity so typing nothing and
+    // hitting save re-anchors to "right now" (idempotent on a clean slate).
+    setEquityDraft(currentEquity.toFixed(2));
     setIsEditingEquity(true);
   };
 
   const handleSaveEquity = () => {
     const parsed = parseFloat(equityDraft);
     if (isNaN(parsed) || parsed < 0) return;
+
+    // Snapshot Σuntagged (P&L + net cashflow) at this moment, so the reset
+    // "forgets" pre-reset activity for the active phase's headline metrics.
+    // The trades themselves stay in the journal.
+    const untaggedPnlNow = trades
+      .filter(t => !t.propPhaseId)
+      .reduce((sum, t) => sum + (getTradePnl(t) ?? 0), 0);
+    const untaggedCashflowNow = cashflows
+      .filter(c => !c.propPhaseId)
+      .reduce((sum, c) => sum + (c.type === "deposit" ? c.amount : -c.amount), 0);
+
+    const newBaseline = parsed;
+    const baselineWillChange = newBaseline.toFixed(2) !== (parseFloat(startBalance) || 0).toFixed(2);
+    const anchorsWillChange =
+      untaggedPnlNow.toFixed(2) !== (parseFloat(anchorPnl) || 0).toFixed(2) ||
+      untaggedCashflowNow.toFixed(2) !== (parseFloat(anchorCashflow) || 0).toFixed(2);
+
+    // Only prompt when the save will materially change what the user sees.
+    if ((baselineWillChange || anchorsWillChange) && (untaggedPnlNow !== 0 || untaggedCashflowNow !== 0)) {
+      const ok = window.confirm(
+        `Reset equity to ${symbol}${newBaseline.toFixed(2)}?\n\n` +
+        `Existing untagged trades and cashflows stay in your journal, but they ` +
+        `won't affect this new phase's P&L or percentage. Current Equity will show ` +
+        `${symbol}${newBaseline.toFixed(2)} at +0.00% until your next trade.`,
+      );
+      if (!ok) return;
+    }
+
     setStartBalance(equityDraft);
+    setAnchorPnl(String(untaggedPnlNow));
+    setAnchorCashflow(String(untaggedCashflowNow));
     setIsEditingEquity(false);
   };
 
@@ -661,11 +718,18 @@ export default function Dashboard() {
           trades={trades}
           cashflows={cashflows}
           startBalance={startBalance}
+          anchorPnl={parseFloat(anchorPnl) || 0}
+          anchorCashflow={parseFloat(anchorCashflow) || 0}
           onPublished={(newBaseline) => {
             // Carry over: new active phase starts at the just-closed phase's
             // ending balance so Current Equity sits at +0.00% until the next
             // trade or until the user re-edits via the header pencil.
             setStartBalance(newBaseline.toFixed(2));
+            // Untagged is now 0 (all tagged to the new phase) — anchors must
+            // also reset, otherwise they'd subtract from 0 and create a
+            // phantom delta on the next session.
+            setAnchorPnl("0");
+            setAnchorCashflow("0");
             fetchTrades();
           }}
         />

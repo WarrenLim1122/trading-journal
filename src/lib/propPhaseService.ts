@@ -201,6 +201,7 @@ export const propPhaseService = {
     allTrades: Trade[],
     allCashflows: Cashflow[],
     startBalance: number,
+    anchors: { pnl: number; cashflow: number } = { pnl: 0, cashflow: 0 },
   ): Promise<string> => {
     const newPhaseId = uuidv4();
     const path = `users/${userId}/propPhases/${newPhaseId}`;
@@ -219,12 +220,18 @@ export const propPhaseService = {
       const startingBalance = startBalance;
 
       // ===== endingBalance =====
-      // startingBalance + Σ(untagged trades P&L) + Σ(untagged cashflow net).
+      // startingBalance + Σ(untagged P&L + cashflow net) − anchors. Anchors
+      // (default {0,0}) represent the snapshot of untagged sums at the moment
+      // the user last reset the baseline, so pre-reset activity doesn't bleed
+      // into this phase's ending balance. With no reset, anchors are 0 and
+      // this reduces to the original formula.
       let untaggedPnl = 0;
       untaggedTrades.forEach(t => { untaggedPnl += getTradePnl(t); });
       let untaggedCash = 0;
       untaggedCashflows.forEach(c => { untaggedCash += cashflowNet(c); });
-      const endingBalance = startingBalance + untaggedPnl + untaggedCash;
+      const effectivePnl = untaggedPnl - anchors.pnl;
+      const effectiveCash = untaggedCash - anchors.cashflow;
+      const endingBalance = startingBalance + effectivePnl + effectiveCash;
 
       // ===== startedAt =====
       // Previous phase's closedAt if any phase exists; else earliest
