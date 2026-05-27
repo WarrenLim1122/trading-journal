@@ -83,6 +83,46 @@ trading-journal/
 | Data | Firebase Auth + Firestore (`gen-lang-client-0206326169` · DB `ai-studio-88ba4d0a-...`) |
 | Charts | `recharts` |
 
+## Active phase baseline (localStorage)
+
+The dashboard's "Current Equity" reads from three localStorage keys, all
+written by the user (never by the bot, never by Firestore reads):
+
+| Key | Default | Role |
+|---|---|---|
+| `startBalance` | `"1000"` | Per-phase baseline equity. Editable via the Dashboard header pencil, the Settings page, and the EquityCurve "Start Balance" input. Treat as the **start of the current (unpublished) active phase**, NOT a seed-of-all-time. |
+| `baselineAnchorPnl` | `"0"` | Snapshot of Σ(untagged trade P&L) at the moment the user last reset the equity. Subtracted from live untagged sums so pre-reset trades are excluded from active-phase metrics. |
+| `baselineAnchorCashflow` | `"0"` | Same idea for cashflows. |
+
+Current Equity math (`Dashboard.tsx`):
+```
+currentEquity = startBalance
+              + (Σ(untagged trade P&L) − baselineAnchorPnl)
+              + (Σ(untagged cashflow net) − baselineAnchorCashflow)
+% change      = effectivePnl / (startBalance + effectiveCashflow) × 100
+```
+
+On `Publish phase` success: `startBalance` carries over to the just-closed
+phase's endingBalance, and BOTH anchors reset to `"0"` (since untagged is now
+empty after tagging). Forgetting to reset anchors = phantom delta next session.
+
+On equity reset (header pencil): a `window.confirm` warns the user before
+snapshotting anchors, but only when there's actually untagged activity to lose
+(otherwise it's a no-op preference change). The trades themselves stay in the
+journal — anchors just exclude them from headline metrics.
+
+`publishPhase` and `PublishPhaseDialog` both accept the anchors and subtract
+them from untagged sums when computing the new phase's `endingBalance` — so
+the published phase records what the Dashboard headline showed, not what the
+raw trade sums say. Default anchors are `{0, 0}` so older callers / first-time
+users behave correctly.
+
+The PhaseMetadataBar on PropFirmPhaseDetail makes `startingBalance` and
+`endingBalance` directly editable via `propPhaseService.updatePhase` — those
+stored numbers are the source of truth for Total P&L and the % chip, not the
+raw trade sums. The phase's EquityCurve passes `readOnlyStartBalance` (new
+EquityCurve prop) to hide the meaningless Start Balance input there.
+
 ## Firestore collections
 
 | Path | Written by | Read by this app |
