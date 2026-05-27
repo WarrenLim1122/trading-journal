@@ -1,14 +1,20 @@
+import { useState } from "react";
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Check, X } from "lucide-react";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { Button } from "@journal/components/ui/button";
 import { Card, CardContent } from "@journal/components/ui/card";
+import { Input } from "@journal/components/ui/input";
+import { propPhaseService } from "@journal/lib/propPhaseService";
 import { PropPhase, PropPhaseOutcome } from "@journal/types/propPhase";
 
 interface Props {
   phase: PropPhase;
   onEdit: () => void;
   onDelete: () => void;
+  // Called after a successful inline edit of startingBalance / endingBalance
+  // so the parent can refetch the phase doc and refresh derived UI.
+  onUpdated: () => void;
 }
 
 const outcomeBadgeClass: Record<PropPhaseOutcome, string> = {
@@ -36,9 +42,53 @@ function safeFormatDate(iso: string | undefined): string {
   }
 }
 
-export function PhaseMetadataBar({ phase, onEdit, onDelete }: Props) {
+export function PhaseMetadataBar({ phase, onEdit, onDelete, onUpdated }: Props) {
   const { symbol } = useCurrency();
   const totalPnl = phase.endingBalance - phase.startingBalance;
+  const pctChange = phase.startingBalance !== 0
+    ? (totalPnl / phase.startingBalance) * 100
+    : 0;
+
+  const [isEditingBalances, setIsEditingBalances] = useState(false);
+  const [startDraft, setStartDraft] = useState(String(phase.startingBalance));
+  const [endDraft, setEndDraft] = useState(String(phase.endingBalance));
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setStartDraft(String(phase.startingBalance));
+    setEndDraft(String(phase.endingBalance));
+    setIsEditingBalances(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditingBalances(false);
+  };
+
+  const saveBalances = async () => {
+    const startNum = parseFloat(startDraft);
+    const endNum = parseFloat(endDraft);
+    if (isNaN(startNum) || isNaN(endNum)) return;
+    setSaving(true);
+    try {
+      await propPhaseService.updatePhase(phase.userId, phase.id, {
+        startingBalance: startNum,
+        endingBalance: endNum,
+      });
+      setIsEditingBalances(false);
+      onUpdated();
+    } catch (e: any) {
+      let msg = "Failed to update balances.";
+      try {
+        const parsed = JSON.parse(e?.message || "");
+        if (parsed?.error) msg = `Failed to update balances: ${parsed.error}`;
+      } catch {
+        /* unparseable — use default */
+      }
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Card className="bg-card/50 border-border/50 mb-8">
@@ -101,12 +151,71 @@ export function PhaseMetadataBar({ phase, onEdit, onDelete }: Props) {
         {/* Balance + P&L row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
           <div className="bg-black/40 p-3 rounded">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Start → End</p>
-            <p className="text-base font-bold font-mono text-white">
-              {formatMoney(symbol, phase.startingBalance, false)}
-              <span className="text-muted-foreground mx-2">→</span>
-              {formatMoney(symbol, phase.endingBalance, false)}
-            </p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-xs text-muted-foreground uppercase">Start → End</p>
+              {!isEditingBalances && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="p-0.5 rounded text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
+                  title="Edit start and end balances"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
+            </div>
+            {isEditingBalances ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input
+                  type="number"
+                  step="any"
+                  autoFocus
+                  value={startDraft}
+                  onChange={(e) => setStartDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveBalances();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  className="w-28 h-8 text-sm font-mono bg-black/40 border-border"
+                />
+                <span className="text-muted-foreground">→</span>
+                <Input
+                  type="number"
+                  step="any"
+                  value={endDraft}
+                  onChange={(e) => setEndDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveBalances();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  className="w-28 h-8 text-sm font-mono bg-black/40 border-border"
+                />
+                <button
+                  type="button"
+                  onClick={saveBalances}
+                  disabled={saving}
+                  className="p-1 rounded text-[#22c55e] hover:bg-[#22c55e]/10 transition-colors disabled:opacity-50"
+                  title="Save (Enter)"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="p-1 rounded text-muted-foreground hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+                  title="Cancel (Esc)"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <p className="text-base font-bold font-mono text-white">
+                {formatMoney(symbol, phase.startingBalance, false)}
+                <span className="text-muted-foreground mx-2">→</span>
+                {formatMoney(symbol, phase.endingBalance, false)}
+              </p>
+            )}
           </div>
           <div className="bg-black/40 p-3 rounded text-center sm:text-left">
             <p className="text-xs text-muted-foreground uppercase mb-1">Total P&amp;L</p>
@@ -114,6 +223,9 @@ export function PhaseMetadataBar({ phase, onEdit, onDelete }: Props) {
               className={`text-xl font-bold font-mono ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}
             >
               {formatMoney(symbol, totalPnl, true)}
+              <span className="text-sm font-mono ml-2">
+                {pctChange >= 0 ? "+" : ""}{pctChange.toFixed(2)}%
+              </span>
             </p>
           </div>
         </div>

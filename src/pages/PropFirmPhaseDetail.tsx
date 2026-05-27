@@ -285,6 +285,7 @@ export function PropFirmPhaseDetail() {
             phase={phase}
             onEdit={() => setEditOpen(true)}
             onDelete={() => setDeleteOpen(true)}
+            onUpdated={refreshAll}
           />
 
           <div className="flex flex-col gap-12">
@@ -448,9 +449,7 @@ export function PropFirmPhaseDetail() {
               <EquityCurve
                 trades={filteredTrades}
                 startingBalance={String(phase.startingBalance)}
-                setStartingBalance={() => {
-                  /* read-only: phase starting balance is frozen at publish time */
-                }}
+                readOnlyStartBalance
               />
             </div>
           </div>

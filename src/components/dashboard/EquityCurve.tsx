@@ -11,9 +11,13 @@ interface Props {
   trades: Trade[];
   startingBalance?: string;
   setStartingBalance?: (val: string) => void;
+  // When true, hide the Start Balance input entirely. Used on the
+  // PropFirmPhaseDetail page where the starting balance is frozen at publish
+  // time and edited via the PhaseMetadataBar pencil instead.
+  readOnlyStartBalance?: boolean;
 }
 
-export function EquityCurve({ trades, startingBalance: externalSb, setStartingBalance: setExternalSb }: Props) {
+export function EquityCurve({ trades, startingBalance: externalSb, setStartingBalance: setExternalSb, readOnlyStartBalance }: Props) {
   const { symbol } = useCurrency();
   const [isCompounding, setIsCompounding] = useState(false);
   const [internalSb, setInternalSb] = useState("1000");
@@ -114,16 +118,18 @@ export function EquityCurve({ trades, startingBalance: externalSb, setStartingBa
             </button>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Label htmlFor="starting-balance" className="text-xs text-muted-foreground font-mono cursor-pointer">Start Balance</Label>
-            <Input 
-              id="starting-balance"
-              type="number"
-              value={startingBalance}
-              onChange={(e) => setStartingBalance(e.target.value)}
-              className="cursor-pointer w-24 h-8 text-xs font-mono bg-black/40 border-border"
-            />
-          </div>
+          {!readOnlyStartBalance && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="starting-balance" className="text-xs text-muted-foreground font-mono cursor-pointer">Start Balance</Label>
+              <Input
+                id="starting-balance"
+                type="number"
+                value={startingBalance}
+                onChange={(e) => setStartingBalance(e.target.value)}
+                className="cursor-pointer w-24 h-8 text-xs font-mono bg-black/40 border-border"
+              />
+            </div>
+          )}
           <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setIsCompounding(!isCompounding)}>
             <button
               className={`cursor-pointer w-9 h-5 rounded-full transition-colors relative ${isCompounding ? 'bg-[#22c55e]' : 'bg-muted-foreground'}`}
