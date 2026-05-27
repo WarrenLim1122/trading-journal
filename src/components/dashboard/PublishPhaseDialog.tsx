@@ -24,7 +24,10 @@ interface Props {
   trades: Trade[];
   cashflows: Cashflow[];
   startBalance: string;
-  onPublished: () => void;
+  // Called after a successful publish. Receives the just-closed phase's ending
+  // balance so the Dashboard can carry it over as the new active phase's baseline
+  // (which lets the next phase start at +0.00%).
+  onPublished: (newBaseline: number) => void;
 }
 
 const STAGES: PropPhaseStage[] = [
@@ -70,15 +73,11 @@ export function PublishPhaseDialog({
   const summary = useMemo(() => {
     const untaggedTrades = trades.filter((t) => !t.propPhaseId);
     const untaggedCashflows = cashflows.filter((c) => !c.propPhaseId);
-    const taggedTrades = trades.filter((t) => t.propPhaseId);
-    const taggedCashflows = cashflows.filter((c) => c.propPhaseId);
 
-    const taggedPnl = taggedTrades.reduce((s, t) => s + (getTradePnl(t) ?? 0), 0);
-    const taggedCash = taggedCashflows.reduce(
-      (s, c) => s + (c.type === "deposit" ? c.amount : -c.amount),
-      0,
-    );
-    const previewStarting = startNum + taggedPnl + taggedCash;
+    // Starting balance for the phase being published = the baseline the user set
+    // on the Dashboard (header pencil). Each phase records its own baseline, not
+    // a cumulative figure derived from prior phases.
+    const previewStarting = startNum;
 
     const untaggedPnl = untaggedTrades.reduce((s, t) => s + (getTradePnl(t) ?? 0), 0);
     const untaggedCash = untaggedCashflows.reduce(
@@ -120,9 +119,10 @@ export function PublishPhaseDialog({
         cashflows,
         startNum,
       );
+      const newBaseline = summary.previewEnding;
       resetForm();
       onOpenChange(false);
-      onPublished();
+      onPublished(newBaseline);
     } catch (e: any) {
       console.error("Publish failed", e);
       let msg = "Failed to publish phase.";

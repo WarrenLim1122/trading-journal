@@ -11,7 +11,7 @@ import { ChartOverview } from "../components/dashboard/ChartOverview";
 import { WinsVsLosses } from "../components/dashboard/WinsVsLosses";
 import { CalendarView } from "../components/dashboard/CalendarView";
 import { EquityCurve } from "../components/dashboard/EquityCurve";
-import { Filter, Download, Plus, Archive } from "lucide-react";
+import { Filter, Download, Plus, Archive, Pencil, Check, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -48,8 +48,12 @@ export default function Dashboard() {
   const [selectedTradeForDetail, setSelectedTradeForDetail] = useState<Trade | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
-  // Global start balance state for dynamic calculation
+  // Global start balance state for dynamic calculation. Acts as the baseline
+  // equity for the current (unpublished) active phase. Editable inline via the
+  // header pencil and via Settings / EquityCurve.
   const [startBalance, setStartBalance] = useState(() => localStorage.getItem("startBalance") || "1000");
+  const [isEditingEquity, setIsEditingEquity] = useState(false);
+  const [equityDraft, setEquityDraft] = useState(startBalance);
 
   const navigate = useNavigate();
 
@@ -364,15 +368,74 @@ export default function Dashboard() {
     ref.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleStartEditEquity = () => {
+    setEquityDraft(startBalance);
+    setIsEditingEquity(true);
+  };
+
+  const handleSaveEquity = () => {
+    const parsed = parseFloat(equityDraft);
+    if (isNaN(parsed) || parsed < 0) return;
+    setStartBalance(equityDraft);
+    setIsEditingEquity(false);
+  };
+
+  const handleCancelEditEquity = () => {
+    setIsEditingEquity(false);
+  };
+
   return (
     <div className="mx-auto max-w-7xl relative">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div className="flex flex-col">
-            <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">Current Equity</span>
+            <span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+              {isEditingEquity ? "Set Equity" : "Current Equity"}
+            </span>
+            {isEditingEquity ? (
+              <div className="flex items-center gap-2">
+                <span className="text-4xl font-black font-mono tracking-tighter text-white">{symbol}</span>
+                <Input
+                  type="number"
+                  step="any"
+                  autoFocus
+                  value={equityDraft}
+                  onChange={(e) => setEquityDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveEquity();
+                    if (e.key === "Escape") handleCancelEditEquity();
+                  }}
+                  className="w-48 h-12 text-3xl font-black font-mono tracking-tighter bg-black/40 border-border text-white"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveEquity}
+                  className="p-1.5 rounded-md text-[#22c55e] hover:bg-[#22c55e]/10 transition-colors"
+                  title="Save (Enter)"
+                >
+                  <Check size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEditEquity}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
+                  title="Cancel (Esc)"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ) : (
             <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
                 {currentEquity < 0 ? "-" : ""}{symbol}{Math.abs(currentEquity).toFixed(2)}
               </h1>
+              <button
+                type="button"
+                onClick={handleStartEditEquity}
+                className="p-1 rounded-md text-muted-foreground hover:text-white hover:bg-white/5 transition-colors self-center"
+                title="Set baseline equity for the current phase"
+              >
+                <Pencil size={14} />
+              </button>
               <span className={`text-sm font-mono font-bold ${equityPercentChange >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                  {equityPercentChange >= 0 ? '+' : ''}{equityPercentChange.toFixed(2)}%
               </span>
@@ -400,6 +463,7 @@ export default function Dashboard() {
                 </Link>
               )}
             </div>
+            )}
           </div>
           <div className="flex items-center gap-4 relative z-50">
              <CurrencyToggle />
@@ -597,7 +661,13 @@ export default function Dashboard() {
           trades={trades}
           cashflows={cashflows}
           startBalance={startBalance}
-          onPublished={fetchTrades}
+          onPublished={(newBaseline) => {
+            // Carry over: new active phase starts at the just-closed phase's
+            // ending balance so Current Equity sits at +0.00% until the next
+            // trade or until the user re-edits via the header pencil.
+            setStartBalance(newBaseline.toFixed(2));
+            fetchTrades();
+          }}
         />
     </div>
   );

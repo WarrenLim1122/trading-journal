@@ -205,28 +205,18 @@ export const propPhaseService = {
     const newPhaseId = uuidv4();
     const path = `users/${userId}/propPhases/${newPhaseId}`;
     try {
-      // Pull existing phases so we can compute startingBalance + startedAt.
+      // Pull existing phases so we can compute startedAt.
       const existingPhases = await propPhaseService.getPhases(userId);
 
-      // ===== startingBalance =====
-      // For the very first publish: startingBalance = seed (startBalance).
-      // Otherwise: seed + Σ(tagged trades P&L) + Σ(tagged cashflows net)
-      //   — equivalently, the ending equity of all prior archived activity.
-      const taggedTrades = allTrades.filter(t => t.propPhaseId);
-      const taggedCashflows = allCashflows.filter(c => c.propPhaseId);
       const untaggedTrades = allTrades.filter(t => !t.propPhaseId);
       const untaggedCashflows = allCashflows.filter(c => !c.propPhaseId);
 
-      let startingBalance: number;
-      if (existingPhases.length === 0) {
-        startingBalance = startBalance;
-      } else {
-        let taggedPnl = 0;
-        taggedTrades.forEach(t => { taggedPnl += getTradePnl(t); });
-        let taggedCash = 0;
-        taggedCashflows.forEach(c => { taggedCash += cashflowNet(c); });
-        startingBalance = startBalance + taggedPnl + taggedCash;
-      }
+      // ===== startingBalance =====
+      // The caller-supplied baseline IS the phase's starting balance — what the
+      // user set as their equity at the start of this phase (header pencil).
+      // No cumulative seed math: each phase records the baseline the user actually
+      // chose for that phase, not a value derived from prior phases.
+      const startingBalance = startBalance;
 
       // ===== endingBalance =====
       // startingBalance + Σ(untagged trades P&L) + Σ(untagged cashflow net).
