@@ -29,7 +29,7 @@ import { DeletePhaseDialog } from "@journal/components/propfirm/DeletePhaseDialo
 import { CashflowManager } from "@journal/components/cashflows/CashflowManager";
 import {
   getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection,
-  getTradeOutcome, getTradeDisplayOutcome, getTradeAccount,
+  getTradeOutcome, getTradeDisplayOutcome, getTradeAccount, getTradeStrategy,
 } from "@journal/lib/tradeUtils";
 
 export function PropFirmPhaseDetail() {
@@ -114,7 +114,7 @@ export function PropFirmPhaseDetail() {
       .filter((t) => (filterAccount === "ALL" || getTradeAccount(t) === filterAccount))
       .filter((t) => (filterOutcome === "ALL" || t.outcome === filterOutcome))
       .filter((t) => (filterPosition === "ALL" || t.position === filterPosition))
-      .filter((t) => (filterStrategy === "ALL" || t.strategy === filterStrategy))
+      .filter((t) => (filterStrategy === "ALL" || getTradeStrategy(t) === filterStrategy))
       .filter((t) => (!filterPair || (t.pair && t.pair.toLowerCase().includes(filterPair.toLowerCase()))))
       .sort((a, b) => {
         let aVal: any = a[sortKey];
@@ -125,6 +125,9 @@ export function PropFirmPhaseDetail() {
         } else if (sortKey === "pair") {
           aVal = (getTradeSymbol(a) || "").toLowerCase();
           bVal = (getTradeSymbol(b) || "").toLowerCase();
+        } else if (sortKey === "strategy") {
+          aVal = getTradeStrategy(a).toLowerCase();
+          bVal = getTradeStrategy(b).toLowerCase();
         }
         if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
         if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
@@ -136,7 +139,7 @@ export function PropFirmPhaseDetail() {
   useEffect(() => {
     if (filterOutcome !== "ALL" && !phaseTrades.some((t) => t.outcome === filterOutcome)) setFilterOutcome("ALL");
     if (filterPosition !== "ALL" && !phaseTrades.some((t) => t.position === filterPosition)) setFilterPosition("ALL");
-    if (filterStrategy !== "ALL" && !phaseTrades.some((t) => t.strategy === filterStrategy)) setFilterStrategy("ALL");
+    if (filterStrategy !== "ALL" && !phaseTrades.some((t) => getTradeStrategy(t) === filterStrategy)) setFilterStrategy("ALL");
   }, [phaseTrades, filterOutcome, filterPosition, filterStrategy]);
 
   const updateWithScrollRestoration = (updateFn: () => void) => {
@@ -371,8 +374,8 @@ export function PropFirmPhaseDetail() {
                     <SelectTrigger className="h-8 w-[120px] bg-black/40 text-xs font-mono"><SelectValue placeholder="All" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Strategies</SelectItem>
-                      {Array.from(new Set(phaseTrades.map((t) => t.strategy))).filter(Boolean).map((strategy) => (
-                        <SelectItem key={strategy as string} value={strategy as string}>{strategy}</SelectItem>
+                      {Array.from(new Set(phaseTrades.map((t) => getTradeStrategy(t)))).filter(Boolean).map((strategy) => (
+                        <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

@@ -56,7 +56,7 @@ trading-journal/
     ├── lib/                  ← firebase.ts, tradeService.ts, cashflowService.ts,
     │                           propPhaseService.ts, useBulkSelect.ts,
     │                           tradeUtils.ts, mt5Calculation.ts, utils.ts
-    ├── pages/                ← Login, Dashboard, NewTrade, Cashflows,
+    ├── pages/                ← Login, Dashboard, NewTrade, Cashflows, Archive,
     │                           StrategiesDashboard, PropFirmDashboard,
     │                           PropFirmPhaseDetail, RiskCalculator, Settings
     └── types/                ← trade.ts, cashflow.ts, propPhase.ts
@@ -122,6 +122,28 @@ The PhaseMetadataBar on PropFirmPhaseDetail makes `startingBalance` and
 stored numbers are the source of truth for Total P&L and the % chip, not the
 raw trade sums. The phase's EquityCurve passes `readOnlyStartBalance` (new
 EquityCurve prop) to hide the meaningless Start Balance input there.
+
+## Archive folder (deleted prop-firm phases)
+
+Deleting a prop-firm folder does **NOT** return its trades/cashflows to the active
+Dashboard. `propPhaseService.deletePhase` re-tags them with the reserved sentinel
+`ARCHIVE_PHASE_ID = "__archive__"` (exported from `propPhaseService.ts`). The
+`Archive` page (`pages/Archive.tsx`, nav "Archive", route `archive`) mimics the
+Dashboard from Chart Overview down to Equity Curve, reading only trades where
+`propPhaseId === ARCHIVE_PHASE_ID`. Its List Overview is editable (permanent
+delete) for purging junk. The sentinel is not a real `propPhases` doc, so it never
+shows as a phase card, and `!t.propPhaseId` keeps archived rows off the active
+Dashboard / Cashflows. When adding a route, update BOTH `JournalApp.tsx` and `App.tsx`.
+
+## Strategy label ("Prop Hedge")
+
+`tradeUtils.getTradeStrategy(trade)` is the single source of truth for a trade's
+strategy in the UI (ListOverview's Strategy column, Dashboard/PropFirm/Archive
+filters, StrategiesDashboard). It reads `trade.strategy` then `strategyName`, and
+maps any bot/arbitrage/hedging trade (incl. legacy `strategyName="Arbitrage
+Trading"`, or a bot trade with no strategy) onto the canonical `"Prop Hedge"`.
+The bot now writes `strategy: "Prop Hedge"` directly (env `FIREBASE_STRATEGY`,
+`arbitrage-trading/layer3/journal/journaling_worker.py`).
 
 ## Firestore collections
 

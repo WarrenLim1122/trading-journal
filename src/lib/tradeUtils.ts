@@ -18,6 +18,29 @@ export function getTradeDate(trade: Trade): string {
   return trade.closeTime || trade.openTime || trade.date || new Date().toISOString();
 }
 
+// ── Strategy normalization ────────────────────────────────────────────────────
+// The hedging strategy is officially "Prop Hedge" (a.k.a. "Prop Firm Hedging").
+// Newer bot trades write `strategy: "Prop Hedge"` directly; older bot trades only
+// carry `strategyName: "Arbitrage Trading"` (and the dashboard read `strategy`,
+// which is why they showed "Uncategorized"). Map every bot/arbitrage/hedging
+// trade onto the canonical label so the whole history reads consistently.
+export const PROP_HEDGE_STRATEGY = "Prop Hedge";
+
+export function getTradeStrategy(trade: Trade): string {
+  const raw = (trade.strategy || trade.strategyName || "").trim();
+  if (raw) {
+    const k = raw.toLowerCase();
+    if (k.includes("hedg") || k.includes("arbitrage") || k === "prop hedge") {
+      return PROP_HEDGE_STRATEGY;
+    }
+    return raw;
+  }
+  // No explicit strategy: a bot/arbitrage trade is the hedging strategy.
+  const tags = (trade.tags || []).map((t) => String(t).toLowerCase());
+  if (trade.source === "bot" || tags.includes("arbitrage")) return PROP_HEDGE_STRATEGY;
+  return "Uncategorized";
+}
+
 export function getTradeOutcome(trade: Trade): string {
   let outcome = trade.outcome?.toUpperCase();
   if (outcome === "LOSS" || outcome === "LOST") outcome = "LOSE";

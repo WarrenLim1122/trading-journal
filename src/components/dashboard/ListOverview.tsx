@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { EditTradeDialog } from "./EditTradeDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
-import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeClosePrice, formatPrice, formatTradeDate, formatTradeTime, tradeCurrencySymbol } from "../../lib/tradeUtils";
+import { getTradeDate, getTradeDirection, getTradeOutcome, getTradePnl, getTradeSymbol, getTradeStrategy, getTradeDisplayOutcome, getTradeClosePrice, formatPrice, formatTradeDate, formatTradeTime, tradeCurrencySymbol } from "../../lib/tradeUtils";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { useBulkSelect } from "@journal/lib/useBulkSelect";
 import { BulkActionBar } from "@journal/components/ui/BulkActionBar";
@@ -179,7 +179,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
             />
           </div>
         )}
-        <Table className="text-xs w-full min-w-[1640px]">
+        <Table className="text-xs w-full min-w-[1760px]">
         <TableHeader className="bg-muted/50">
           <TableRow className="border-b border-white/10 hover:bg-transparent">
             {isSelectMode && (
@@ -197,6 +197,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
             <TableHead className="font-mono text-muted-foreground w-8 text-center border-r border-white/5 border-b-0 h-10 px-1">#</TableHead>
             <SortableHeader label="Symbol" sortKey="pair" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
             <SortableHeader label="Ticket" sortKey="ticket" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-28" />
+            <SortableHeader label="Strategy" sortKey="strategy" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-32" />
             <SortableHeader label="Date" sortKey="date" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
             <SortableHeader label="Time" sortKey="date" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
             <SortableHeader label="Type" sortKey="position" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-20" />
@@ -215,7 +216,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
         <TableBody>
           {trades.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={readOnly ? 13 : isSelectMode ? 15 : 14} className="h-24 text-center text-muted-foreground font-mono">
+              <TableCell colSpan={readOnly ? 14 : isSelectMode ? 16 : 15} className="h-24 text-center text-muted-foreground font-mono">
                 No trades match your filters.
               </TableCell>
             </TableRow>
@@ -265,6 +266,11 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center font-mono border-r border-white/5 px-2 py-2.5">
                   {trade.ticket !== undefined ? trade.ticket : "-"}
+                </TableCell>
+                <TableCell className="text-center border-r border-white/5 px-2 py-2.5">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-primary/40 text-primary text-[10px] font-mono uppercase tracking-wide whitespace-nowrap">
+                    {getTradeStrategy(trade)}
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-center border-r border-white/5 px-2 py-2.5 whitespace-nowrap">
                   {formatTradeDate(dateObjStr)}

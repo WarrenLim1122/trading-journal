@@ -62,7 +62,7 @@ export function DeletePhaseDialog({
             Delete this folder?
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            This will untag all {tradeCount} trade{tradeCount === 1 ? "" : "s"} and {cashflowCount} cashflow{cashflowCount === 1 ? "" : "s"} from this phase and return them to the active Dashboard. The phase folder itself will be removed. This cannot be undone.
+            This will move all {tradeCount} trade{tradeCount === 1 ? "" : "s"} and {cashflowCount} cashflow{cashflowCount === 1 ? "" : "s"} from this phase into the Archive (they will NOT return to the active Dashboard). The phase folder itself will be removed. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-6 flex gap-2 sm:justify-end">

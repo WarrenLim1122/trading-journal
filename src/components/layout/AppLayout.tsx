@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Calculator, LogOut, Activity, PlusCircle, FolderGit2, Settings as SettingsIcon, UserCircle, Wallet, Archive } from "lucide-react";
+import { LayoutDashboard, Calculator, LogOut, Activity, PlusCircle, FolderGit2, Settings as SettingsIcon, UserCircle, Wallet, Archive, Boxes } from "lucide-react";
 import { useAuth } from "@journal/contexts/AuthContext";
 import { Button } from "@journal/components/ui/button";
 
@@ -18,6 +18,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { name: "Cashflows", path: "/journal/cashflows", icon: Wallet },
     { name: "Strategies", path: "/journal/strategies", icon: FolderGit2 },
     { name: "PropFirm", path: "/journal/prop-firm", icon: Archive },
+    { name: "Archive", path: "/journal/archive", icon: Boxes },
     { name: "Risk Calculator", path: "/journal/risk-calculator", icon: Calculator },
     { name: "Settings", path: "/journal/settings", icon: SettingsIcon },
   ];

@@ -5,6 +5,7 @@ import { Trade } from "@journal/types/trade";
 import { FolderGit2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@journal/components/ui/card";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
+import { getTradeStrategy, getTradePnl } from "@journal/lib/tradeUtils";
 
 export function StrategiesDashboard() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export function StrategiesDashboard() {
     }> = {};
 
     trades.forEach(t => {
-      const strat = t.strategy || "Uncategorized";
+      const strat = getTradeStrategy(t);
       if (!stats[strat]) {
         stats[strat] = { total: 0, wins: 0, losses: 0, breakevens: 0, totalProfit: 0 };
       }
@@ -41,9 +42,7 @@ export function StrategiesDashboard() {
       else if (t.outcome === "LOSE") stats[strat].losses += 1;
       else if (t.outcome === "BREAKEVEN") stats[strat].breakevens += 1;
 
-      if (t.pnlAmount) {
-        stats[strat].totalProfit += t.pnlAmount;
-      }
+      stats[strat].totalProfit += getTradePnl(t);
     });
 
     return Object.entries(stats).map(([name, data]) => ({

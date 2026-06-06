@@ -11,6 +11,7 @@ import { PropFirmDashboard } from "./pages/PropFirmDashboard";
 import { PropFirmPhaseDetail } from "./pages/PropFirmPhaseDetail";
 import { Settings } from "./pages/Settings";
 import { Cashflows } from "./pages/Cashflows";
+import { Archive } from "./pages/Archive";
 import { AppLayout } from "./components/layout/AppLayout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/new-trade" element={<ProtectedRoute><NewTrade /></ProtectedRoute>} />
             <Route path="/cashflows" element={<ProtectedRoute><Cashflows /></ProtectedRoute>} />
+            <Route path="/archive" element={<ProtectedRoute><Archive /></ProtectedRoute>} />
             <Route path="/strategies" element={<ProtectedRoute><StrategiesDashboard /></ProtectedRoute>} />
             <Route path="/prop-firm" element={<ProtectedRoute><PropFirmDashboard /></ProtectedRoute>} />
             <Route path="/prop-firm/:phaseId" element={<ProtectedRoute><PropFirmPhaseDetail /></ProtectedRoute>} />

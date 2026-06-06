@@ -24,7 +24,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { TradeDetailDialog } from "../components/dashboard/TradeDetailDialog";
 import { PublishPhaseDialog } from "../components/dashboard/PublishPhaseDialog";
-import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome, getTradeAccount } from "../lib/tradeUtils";
+import { getTradeDate, getTradePnl, getTradeSymbol, getTradeDirection, getTradeOutcome, getTradeDisplayOutcome, getTradeAccount, getTradeStrategy } from "../lib/tradeUtils";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -135,7 +135,7 @@ export default function Dashboard() {
       .filter(t => (filterAccount === 'ALL' || getTradeAccount(t) === filterAccount))
       .filter(t => (filterOutcome === 'ALL' || t.outcome === filterOutcome))
       .filter(t => (filterPosition === 'ALL' || t.position === filterPosition))
-      .filter(t => (filterStrategy === 'ALL' || t.strategy === filterStrategy))
+      .filter(t => (filterStrategy === 'ALL' || getTradeStrategy(t) === filterStrategy))
       .filter(t => (!filterPair || (t.pair && t.pair.toLowerCase().includes(filterPair.toLowerCase()))))
       .sort((a, b) => {
         let aVal: any = a[sortKey];
@@ -146,6 +146,9 @@ export default function Dashboard() {
         } else if (sortKey === 'pair') {
            aVal = (getTradeSymbol(a) || "").toLowerCase();
            bVal = (getTradeSymbol(b) || "").toLowerCase();
+        } else if (sortKey === 'strategy') {
+           aVal = getTradeStrategy(a).toLowerCase();
+           bVal = getTradeStrategy(b).toLowerCase();
         }
         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
@@ -351,7 +354,7 @@ export default function Dashboard() {
       }
     }
     if (filterStrategy !== 'ALL') {
-      const availableStrategies = Array.from(new Set(trades.map(t => t.strategy))).filter(Boolean);
+      const availableStrategies = Array.from(new Set(trades.map(t => getTradeStrategy(t)))).filter(Boolean);
       if (!availableStrategies.includes(filterStrategy)) {
         setFilterStrategy('ALL');
       }
@@ -624,8 +627,8 @@ export default function Dashboard() {
                        </SelectTrigger>
                        <SelectContent>
                          <SelectItem value="ALL">All Strategies</SelectItem>
-                         {Array.from(new Set(trades.map(t => t.strategy))).filter(Boolean).map(strategy => (
-                           <SelectItem key={strategy as string} value={strategy as string}>{strategy}</SelectItem>
+                         {Array.from(new Set(trades.filter(t => !t.propPhaseId).map(t => getTradeStrategy(t)))).filter(Boolean).map(strategy => (
+                           <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
                          ))}
                        </SelectContent>
                      </Select>

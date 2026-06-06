@@ -9,7 +9,6 @@ import {
   setDoc,
   serverTimestamp,
   writeBatch,
-  deleteField,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { db, auth } from "@journal/lib/firebase";
@@ -47,6 +46,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 // Firestore writeBatch supports at most 500 ops per batch.
 const BATCH_LIMIT = 500;
+
+// Reserved `propPhaseId` sentinel for the Archive folder. Deleting a prop-firm
+// folder retags its trades + cashflows with this value instead of untagging them,
+// so they move to the Archive page rather than re-appearing on the active Dashboard.
+// It is NOT a real propPhases doc, so it never shows as a phase card.
+export const ARCHIVE_PHASE_ID = "__archive__";
 
 function cashflowNet(c: Cashflow): number {
   return c.type === "deposit" ? c.amount : -c.amount;
@@ -128,10 +133,10 @@ export const propPhaseService = {
   },
 
   /**
-   * Delete a phase: first untag every trade + cashflow that pointed at it
-   * (so they reappear in the active phase), then delete the phase doc.
-   * Both untag passes are paginated into 500-op batches.
-   * Writes throw on failure.
+   * Delete a phase: re-tag every trade + cashflow that pointed at it with the
+   * Archive sentinel (so they move to the Archive page, NOT back to the active
+   * Dashboard), then delete the phase doc. Both passes are paginated into
+   * 500-op batches. Writes throw on failure.
    */
   deletePhase: async (
     userId: string,
@@ -150,26 +155,26 @@ export const propPhaseService = {
         .filter(d => (d.data() as Cashflow).propPhaseId === phaseId)
         .map(d => d.id);
 
-      // Untag trades first (paginated).
+      // Re-tag trades to the Archive folder (paginated).
       for (let i = 0; i < taggedTradeIds.length; i += BATCH_LIMIT) {
         const chunk = taggedTradeIds.slice(i, i + BATCH_LIMIT);
         const batch = writeBatch(db);
         chunk.forEach(id => {
           batch.update(doc(db, `users/${userId}/trades/${id}`), {
-            propPhaseId: deleteField(),
+            propPhaseId: ARCHIVE_PHASE_ID,
             updatedAt: serverTimestamp(),
           });
         });
         await batch.commit();
       }
 
-      // Untag cashflows (paginated).
+      // Re-tag cashflows to the Archive folder (paginated).
       for (let i = 0; i < taggedCashflowIds.length; i += BATCH_LIMIT) {
         const chunk = taggedCashflowIds.slice(i, i + BATCH_LIMIT);
         const batch = writeBatch(db);
         chunk.forEach(id => {
           batch.update(doc(db, `users/${userId}/cashflows/${id}`), {
-            propPhaseId: deleteField(),
+            propPhaseId: ARCHIVE_PHASE_ID,
             updatedAt: serverTimestamp(),
           });
         });

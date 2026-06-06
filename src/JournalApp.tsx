@@ -11,6 +11,7 @@ import { PropFirmDashboard } from "./pages/PropFirmDashboard";
 import { PropFirmPhaseDetail } from "./pages/PropFirmPhaseDetail";
 import { Settings } from "./pages/Settings";
 import { Cashflows } from "./pages/Cashflows";
+import { Archive } from "./pages/Archive";
 import { AppLayout } from "./components/layout/AppLayout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -99,6 +100,14 @@ export default function JournalApp() {
             element={
               <ProtectedRoute>
                 <Cashflows />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="archive"
+            element={
+              <ProtectedRoute>
+                <Archive />
               </ProtectedRoute>
             }
           />
