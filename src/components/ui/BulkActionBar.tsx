@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Archive } from "lucide-react";
 import { Button } from "@journal/components/ui/button";
 
 interface BulkActionBarProps {
@@ -7,6 +7,8 @@ interface BulkActionBarProps {
   onCancel: () => void;
   /** Singular noun for the count display ("trade", "cashflow"). Defaults to "item". */
   itemLabel?: string;
+  /** When provided, render an Archive action (left of Delete) for the selection. */
+  onArchive?: () => void;
 }
 
 export function BulkActionBar({
@@ -14,6 +16,7 @@ export function BulkActionBar({
   onDelete,
   onCancel,
   itemLabel = "item",
+  onArchive,
 }: BulkActionBarProps) {
   const label = `${count} ${itemLabel}${count === 1 ? "" : "s"} selected`;
 
@@ -24,6 +27,12 @@ export function BulkActionBar({
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
+        {onArchive && (
+          <Button variant="outline" size="sm" onClick={onArchive} disabled={count === 0} className="gap-1">
+            <Archive size={14} />
+            Archive
+          </Button>
+        )}
         <Button
           variant="destructive"
           size="sm"

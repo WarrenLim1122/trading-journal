@@ -93,6 +93,8 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
   const masterCheckboxRef = useRef<HTMLInputElement | null>(null);
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkArchiveConfirmOpen, setIsBulkArchiveConfirmOpen] = useState(false);
+  const [isBulkArchiving, setIsBulkArchiving] = useState(false);
 
   // Clear selection whenever the trades prop reference changes (filters / sort
   // upstream produce a fresh array). The hook handles its own internal state.
@@ -141,6 +143,22 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
   };
 
   const bulkSelectedCount = bulk.selectedCount;
+  const confirmBulkArchive = async () => {
+    if (!user || bulkSelectedCount === 0) return;
+    setIsBulkArchiving(true);
+    try {
+      await tradeService.archiveTradesBatch(user.uid, Array.from(bulk.selectedIds));
+      (onTradesChanged ?? onTradeDeleted)();
+      bulk.exit();
+      setIsBulkArchiveConfirmOpen(false);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      alert(`Failed to archive trades: ${msg}`);
+    } finally {
+      setIsBulkArchiving(false);
+    }
+  };
+
   const confirmBulkDelete = async () => {
     if (!user || bulkSelectedCount === 0) return;
     setIsBulkDeleting(true);
@@ -199,6 +217,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
             <BulkActionBar
               count={bulk.selectedCount}
               onDelete={() => setIsBulkConfirmOpen(true)}
+              onArchive={enableArchive ? () => setIsBulkArchiveConfirmOpen(true) : undefined}
               onCancel={bulk.exit}
               itemLabel="trade"
             />
@@ -412,6 +431,33 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   </Button>
                   <Button type="button" onClick={confirmArchive} disabled={isArchiving} className="font-mono gap-2">
                     <Archive size={14} /> {isArchiving ? "Archiving..." : "Move to Archive"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={isBulkArchiveConfirmOpen}
+              onOpenChange={(open) => {
+                if (!isBulkArchiving) setIsBulkArchiveConfirmOpen(open);
+              }}
+            >
+              <DialogContent className="sm:max-w-[425px] border-white/10 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="font-mono text-xl text-white">
+                    Archive {bulkSelectedCount} {bulkSelectedCount === 1 ? "trade" : "trades"}?
+                  </DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    These trades move into the Archive and leave the active Dashboard. They are not deleted — review them any time on the Archive page.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+                  <Button type="button" variant="outline" onClick={() => setIsBulkArchiveConfirmOpen(false)} disabled={isBulkArchiving} className="font-mono">
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={confirmBulkArchive} disabled={isBulkArchiving || bulkSelectedCount === 0} className="font-mono gap-2">
+                    <Archive size={14} />
+                    {isBulkArchiving ? "Archiving..." : `Archive ${bulkSelectedCount} ${bulkSelectedCount === 1 ? "trade" : "trades"}`}
                   </Button>
                 </DialogFooter>
               </DialogContent>

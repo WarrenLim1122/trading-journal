@@ -102,6 +102,27 @@ export const tradeService = {
     }
   },
 
+  // Bulk-archive: tag many trades with ARCHIVE_PHASE_ID in 500-op batches.
+  archiveTradesBatch: async (userId: string, tradeIds: string[]): Promise<void> => {
+    const path = `users/${userId}/trades (archive batch ${tradeIds.length})`;
+    try {
+      const CHUNK = 500;
+      for (let i = 0; i < tradeIds.length; i += CHUNK) {
+        const chunk = tradeIds.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach((id) =>
+          batch.update(doc(db, "users", userId, "trades", id), {
+            propPhaseId: ARCHIVE_PHASE_ID,
+            updatedAt: serverTimestamp(),
+          }),
+        );
+        await batch.commit();
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
   deleteTrade: async (userId: string, tradeId: string): Promise<void> => {
       const pathForDelete = `users/${userId}/trades/${tradeId}`;
       try {
