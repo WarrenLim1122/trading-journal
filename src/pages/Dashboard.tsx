@@ -676,6 +676,7 @@ export default function Dashboard() {
                 trades={filteredTrades}
                 onTradeDeleted={fetchTrades}
                 onTradesChanged={fetchTrades}
+                enableArchive
                 onRowClick={(id) => {
                   const t = filteredTrades.find(trade => trade.id === id);
                   if (t) setSelectedTradeForDetail(t);

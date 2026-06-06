@@ -1,6 +1,7 @@
 import { collection, doc, query, where, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { Trade } from "../types/trade";
+import { ARCHIVE_PHASE_ID } from "./propPhaseService";
 import { v4 as uuidv4 } from "uuid";
 
 enum OperationType {
@@ -84,6 +85,21 @@ export const tradeService = {
       } catch (error) {
          handleFirestoreError(error, OperationType.UPDATE, pathForUpdate);
       }
+  },
+
+  // Move a single trade into the Archive folder (tag with the reserved sentinel)
+  // instead of deleting it. It disappears from the active Dashboard and shows on
+  // the Archive page. Writes throw on failure.
+  archiveTrade: async (userId: string, tradeId: string): Promise<void> => {
+    const pathForUpdate = `users/${userId}/trades/${tradeId}`;
+    try {
+      await updateDoc(doc(db, pathForUpdate), {
+        propPhaseId: ARCHIVE_PHASE_ID,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, pathForUpdate);
+    }
   },
 
   deleteTrade: async (userId: string, tradeId: string): Promise<void> => {

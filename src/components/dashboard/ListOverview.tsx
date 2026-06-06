@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Trade } from "../../types/trade";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
-import { Trash2, Pencil, ArrowUp, ArrowDown, ChevronsUpDown, CheckSquare } from "lucide-react";
+import { Trash2, Pencil, Archive, ArrowUp, ArrowDown, ChevronsUpDown, CheckSquare } from "lucide-react";
 import { tradeService } from "../../lib/tradeService";
 import { useAuth } from "../../contexts/AuthContext";
 import { EditTradeDialog } from "./EditTradeDialog";
@@ -32,6 +32,13 @@ interface Props {
    * only for clarity — in practice both point to the same fetch fn.
    */
   onTradesChanged?: () => void;
+  /**
+   * When true, render a per-row Archive action (between edit and delete) that
+   * moves the trade into the Archive folder instead of deleting it. Only the
+   * active Dashboard passes this — the Archive page itself doesn't (already
+   * archived) and readOnly views have no action column.
+   */
+  enableArchive?: boolean;
 }
 
 interface SortableHeaderProps {
@@ -70,13 +77,15 @@ function SortableHeader({ label, sortKey, activeKey, direction, onSort, classNam
   );
 }
 
-export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort, readOnly = false, onTradesChanged }: Props) {
+export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sortDirection, onSort, readOnly = false, onTradesChanged, enableArchive = false }: Props) {
   const { user } = useAuth();
   const { symbol: currencySymbol } = useCurrency();
 
   const [tradeToEdit, setTradeToEdit] = useState<Trade | null>(null);
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tradeToArchive, setTradeToArchive] = useState<Trade | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const bulk = useBulkSelect(trades);
   const showSelectAffordances = !readOnly;
@@ -111,6 +120,22 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
         console.error("Failed to delete trade", error);
       } finally {
         setIsDeleting(false);
+      }
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (user && tradeToArchive) {
+      setIsArchiving(true);
+      try {
+        await tradeService.archiveTrade(user.uid, tradeToArchive.id);
+        (onTradesChanged ?? onTradeDeleted)();
+        setTradeToArchive(null);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        alert(`Failed to archive trade: ${msg}`);
+      } finally {
+        setIsArchiving(false);
       }
     }
   };
@@ -209,7 +234,7 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
             <SortableHeader label="TP" sortKey="takeProfit" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-1 w-20" />
             <SortableHeader label="PnL" sortKey="pnlAmount" activeKey={sortKey} direction={sortDirection} onSort={onSort} className="text-center border-r border-white/5 border-b-0 px-2 w-24" />
             {!readOnly && (
-              <TableHead className="font-mono text-muted-foreground text-center border-b-0 px-2 w-24">Action</TableHead>
+              <TableHead className="font-mono text-muted-foreground text-center border-b-0 px-2 w-28">Action</TableHead>
             )}
           </TableRow>
         </TableHeader>
@@ -325,10 +350,15 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                 {!readOnly && (
                   <TableCell className="p-0 border-white/5 px-1 py-1">
                     <div className="flex items-center justify-center gap-1 w-full h-full">
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToEdit(trade); }} className="h-7 w-7 text-muted-foreground hover:text-white z-10 relative cursor-pointer">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToEdit(trade); }} className="h-7 w-7 text-muted-foreground hover:text-white z-10 relative cursor-pointer" title="Edit trade">
                         <Pencil size={14} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToDelete(trade); }} className="h-7 w-7 text-muted-foreground hover:text-destructive z-10 relative cursor-pointer">
+                      {enableArchive && (
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToArchive(trade); }} className="h-7 w-7 text-muted-foreground hover:text-primary z-10 relative cursor-pointer" title="Move to Archive">
+                          <Archive size={14} />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setTradeToDelete(trade); }} className="h-7 w-7 text-muted-foreground hover:text-destructive z-10 relative cursor-pointer" title="Delete trade">
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -363,6 +393,25 @@ export function ListOverview({ trades, onTradeDeleted, onRowClick, sortKey, sort
                   </Button>
                   <Button type="button" variant="destructive" onClick={confirmDelete} disabled={isDeleting} className="font-mono">
                     {isDeleting ? "Deleting..." : "Delete Trade"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!tradeToArchive} onOpenChange={(open) => !open && !isArchiving && setTradeToArchive(null)}>
+              <DialogContent className="sm:max-w-[425px] border-white/10 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="font-mono text-xl text-white">Move to Archive?</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    This trade will move into the Archive and disappear from the active Dashboard. It is not deleted — you can review it any time on the Archive page.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+                  <Button type="button" variant="outline" onClick={() => setTradeToArchive(null)} disabled={isArchiving} className="font-mono">
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={confirmArchive} disabled={isArchiving} className="font-mono gap-2">
+                    <Archive size={14} /> {isArchiving ? "Archiving..." : "Move to Archive"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
