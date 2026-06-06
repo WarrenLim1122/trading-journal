@@ -3,7 +3,7 @@ import { Trade } from "../../types/trade";
 import { Card, CardContent } from "../ui/card";
 import { ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "../ui/dialog";
-import { getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeDate, formatTradeDate } from "../../lib/tradeUtils";
+import { getTradeOutcome, getTradePnl, getTradeSymbol, getTradeDisplayOutcome, getTradeDate, getTradeStrategy, formatTradeDate } from "../../lib/tradeUtils";
 
 interface Props {
   trades: Trade[];
@@ -120,11 +120,9 @@ export function ChartOverview({ trades, startBalance = 1000, selectedChartId, on
                 </div>
                 <span className="text-xs text-muted-foreground font-mono leading-none translate-y-px">{formatTradeDate(dateObjStr)}</span>
              </div>
-             {(trade.strategyName || trade.strategy) && (
-               <div className="inline-flex bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-mono border border-blue-500/30">
-                 {trade.strategyName || trade.strategy}
-               </div>
-             )}
+             <div className="inline-flex bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-mono border border-blue-500/30">
+               {getTradeStrategy(trade)}
+             </div>
           </CardContent>
         </Card>
       );
