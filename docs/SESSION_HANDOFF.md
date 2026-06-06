@@ -1,27 +1,29 @@
-# Session handoff — verified + labeled the bundled "taste skill" in the global web-design skill
+# Session handoff — Archive folder, Prop Hedge strategy, Cashflows two-column
 
 > Persistent resume file. Paste into a fresh session (or auto-load via a SessionStart hook).
 > Delta only — project overview, roles, and decisions live in CLAUDE.md & docs (auto-loaded).
 
-**Role:** Solo — Claude does the work, Warren reviews.
+**Role:** Solo dev (Warren) + Claude. Claude edits `trading-journal`, pushes, and bumps the `personal-website` submodule to deploy. Bot changes go in `arbitrage-trading`.
 
-## Status — updated 2026-06-02
-- **No trading-journal code changed this session.** Journal state is exactly as CLAUDE.md describes; the recent equity-baseline/phase commits are untouched.
-- This session was **global-skill maintenance** on `~/.agents/skills/web-design` (symlinked at `~/.claude/skills/web-design`), not on this repo. cwd just happened to be trading-journal.
-- Confirmed Warren **already has the taste skill** — it's vendored inside `web-design` as `references/taste-direction.md` (+ 4 `references/style-packs/`). He couldn't recognize it because of the opaque filename.
-- Re-ran the skill's Update Protocol: vendored `taste-direction.md` and all 4 style-packs are **byte-identical to upstream `Leonxlnx/taste-skill` v2** (`design-taste-frontend`, latest "round-5 hardening" commit). Nothing to download/update.
-- Edits made (on disk): labeled the taste row "**The taste skill**" in `web-design/SKILL.md`; added a 2026-06-02 verify note to the taste provenance row in `web-design/CLAUDE.md`; updated the existing `web-design-skill` memory in the second-brain project.
+## Status — updated 2026-06-06
+All shipped to `main` and live (submodule bumped each time). This session, in order:
+
+- **Archive folder.** `deletePhase` now re-tags trades/cashflows with `ARCHIVE_PHASE_ID = "__archive__"` instead of untagging (they no longer leak to the active Dashboard). New `pages/Archive.tsx` (nav "Archive", routes in both `JournalApp.tsx` + `App.tsx`) mimics Dashboard chart→equity, editable list for purging. See CLAUDE.md §Archive folder.
+- **Prop Hedge strategy.** `tradeUtils.getTradeStrategy()` normalizes bot/arbitrage/hedging trades → "Prop Hedge". Added Strategy column to ListOverview (between Ticket and Date), used in all filters + StrategiesDashboard + ChartOverview badge. Bot writes `strategy: "Prop Hedge"` (env `FIREBASE_STRATEGY`, `arbitrage-trading/layer3/journal/journaling_worker.py`) — pushed to that repo's `main`.
+- **Per-row + bulk Archive actions** on the active Dashboard's ListOverview (`enableArchive` prop → `tradeService.archiveTrade` / `archiveTradesBatch`; BulkActionBar got an optional `onArchive`).
+- **Cashflows redesigned** to two columns (CLAUDE.md §Cashflows page): left = Prop Firm Archive cards (earned = end−start), right = `<CashflowManager />` retitled "Net Cash Flow". Profit Journal was built then **removed by request** (file deleted). Title is normal-case "Cashflows".
 
 ## Next actions
-1. None pending for web-design. For trading-journal, resume whatever journal work Warren picks next (see CLAUDE.md §Active phase baseline / Workflow).
+1. Nothing pending in code. Wait for Warren's next screenshot/feedback round.
+2. **Bot deploy reminder (his side):** the live `arbitrage-trading` bot must be restarted/redeployed for new trades to carry `strategy: "Prop Hedge"`; its `.env` uses the `FIREBASE_STRATEGY=Prop Hedge` default unless overridden. Existing trades already show "Prop Hedge" via read-time normalization, so this is non-urgent.
 
 ## Running state
 - Background processes: none
-- Dev servers / ports: none
-- Worktrees / branches: none (on `main`; no trading-journal commits this session)
+- Dev servers / ports: none (Warren tests on the deployed site warrenlimzf.com/journal)
+- Worktrees / branches: none — all work on `main` in both repos
 
 ## Open items
-- none
+- A prior turn offered an account filter for the Profit Journal — moot now, the Profit Journal was removed. No open question outstanding.
 
 ## Pick up here
-Nothing to follow up on the web-design skill — it's current. Next session most likely returns to trading-journal feature work; treat this handoff as "previous session was unrelated, journal unchanged."
+Idle — await Warren's next UI feedback (he iterates via screenshots; make the exact change, lint, push, and auto-bump the submodule). Latest live journal commit before this doc commit: `4049ace`, submodule synced in personal-website.

@@ -135,6 +135,13 @@ delete) for purging junk. The sentinel is not a real `propPhases` doc, so it nev
 shows as a phase card, and `!t.propPhaseId` keeps archived rows off the active
 Dashboard / Cashflows. When adding a route, update BOTH `JournalApp.tsx` and `App.tsx`.
 
+Trades can also be archived **without** deleting a phase: `ListOverview` takes an
+`enableArchive` prop (set only by the active Dashboard) that renders a per-row
+Archive action (between edit and delete) and a bulk Archive button in the
+selection toolbar. These call `tradeService.archiveTrade` / `archiveTradesBatch`,
+which just tag with `ARCHIVE_PHASE_ID`. The Archive page itself does NOT pass
+`enableArchive` (rows are already archived).
+
 ## Strategy label ("Prop Hedge")
 
 `tradeUtils.getTradeStrategy(trade)` is the single source of truth for a trade's
@@ -143,7 +150,19 @@ filters, StrategiesDashboard). It reads `trade.strategy` then `strategyName`, an
 maps any bot/arbitrage/hedging trade (incl. legacy `strategyName="Arbitrage
 Trading"`, or a bot trade with no strategy) onto the canonical `"Prop Hedge"`.
 The bot now writes `strategy: "Prop Hedge"` directly (env `FIREBASE_STRATEGY`,
-`arbitrage-trading/layer3/journal/journaling_worker.py`).
+`arbitrage-trading/layer3/journal/journaling_worker.py`). `ChartOverview` cards
+also render the badge via `getTradeStrategy`.
+
+## Cashflows page (two-column)
+
+`pages/Cashflows.tsx` is a two-column layout (title is normal-case "Cashflows"):
+- **Left — Prop Firm Archive:** one card per published `propPhase`, showing
+  name, stage, outcome, trade date range, and Earned = `endingBalance −
+  startingBalance`, linking to the phase detail. A `hidden lg:block h-7 mb-4`
+  spacer top-aligns the first box with the right column's summary cards (matches
+  `CashflowManager`'s Select/New Entry row height — don't remove it).
+- **Right — Net Cash Flow:** just `<CashflowManager />` (Deposits / Withdrawals /
+  Net + table). There is intentionally NO profit journal here (removed by request).
 
 ## Firestore collections
 
@@ -171,11 +190,19 @@ npm run lint              # must pass
 git add -A
 git commit -m "<clear message>"
 git push origin main
+# Then ALWAYS finish the deploy (see below):
+cd ../personal-website && git submodule update --remote src/journal \
+  && git add src/journal && git commit -m "Sync trading-journal submodule" && git push origin main
 ```
 
 Hard stops: lint fails, secrets detected, merge conflict, destructive change. Don't force-push.
 
-Remind Warren to **also bump the submodule in personal-website** so the change ships to `warrenlimzf.com/journal`.
+**Bump the submodule yourself — don't just remind.** Warren wants the
+personal-website submodule pointer bumped automatically after every journal push
+(that's what actually redeploys `warrenlimzf.com/journal`); pushing this repo
+alone ships nothing. Stage only `src/journal` there — leave any unrelated
+working-tree changes (e.g. `headshot.jpg`) untouched. See memory
+`auto-bump-submodule-on-ship`.
 
 ## Related repos
 
