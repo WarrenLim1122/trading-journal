@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Archive, TrendingUp, TrendingDown } from "lucide-react";
+import { Archive, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@journal/contexts/AuthContext";
 import { useCurrency } from "@journal/contexts/CurrencyContext";
 import { CashflowManager } from "@journal/components/cashflows/CashflowManager";
-import { ProfitJournal } from "@journal/components/cashflows/ProfitJournal";
 import { propPhaseService } from "@journal/lib/propPhaseService";
 import { tradeService } from "@journal/lib/tradeService";
 import { PropPhase, PropPhaseOutcome } from "@journal/types/propPhase";
 import { Trade } from "@journal/types/trade";
-import { getTradePnl, getTradeDate } from "@journal/lib/tradeUtils";
+import { getTradeDate } from "@journal/lib/tradeUtils";
 
 const outcomeBadgeClass: Record<PropPhaseOutcome, string> = {
   Passed: "bg-green-500/15 text-green-400 border-green-500/30",
@@ -42,13 +41,6 @@ export function Cashflows() {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Right column: realised profit comes from active-phase trades (untagged) —
-  // archived / prop-tagged trades live in their own folders.
-  const activeTrades = useMemo(
-    () => trades.filter((t) => !t.propPhaseId),
-    [trades],
-  );
-
   // Left column: each published prop phase, with what it earned (end − start).
   const phaseRows = useMemo(
     () =>
@@ -67,25 +59,30 @@ export function Cashflows() {
     <div className="mx-auto max-w-7xl">
       <header className="mb-8">
         <h1 className="text-4xl font-black font-mono tracking-tighter text-white">
-          <span className="uppercase">CASH</span>flows
+          Cashflows
         </h1>
         <p className="text-sm text-muted-foreground font-mono mt-1">
-          Prop-firm payouts on the left; your deposits, withdrawals and realised profit on the right.
+          Prop-firm payouts on the left; your deposits, withdrawals and net cash flow on the right.
         </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* ── Left: Prop Firm Archive ─────────────────────────────────────── */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
+        <section className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
             <Archive className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold font-mono uppercase tracking-wider text-white">
               Prop Firm Archive
             </h2>
           </div>
-          <p className="text-xs font-mono text-muted-foreground -mt-2">
+          <p className="text-xs font-mono text-muted-foreground mb-4">
             Each phase you publish from the Dashboard, and what it earned.
           </p>
+
+          {/* Spacer matching the right column's Select / New Entry row (h-7 mb-4)
+              so the first phase box top-aligns with the Deposits/Withdrawals/Net
+              cards. Only needed in the two-column (lg) layout. */}
+          <div className="hidden lg:block h-7 mb-4" aria-hidden />
 
           {loading ? (
             <div className="rounded-xl border border-white/10 bg-card p-10 text-center text-sm font-mono text-muted-foreground animate-pulse">
@@ -141,21 +138,19 @@ export function Cashflows() {
           )}
         </section>
 
-        {/* ── Right: Profit and Deposits ──────────────────────────────────── */}
-        <section className="flex flex-col gap-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+        {/* ── Right: Net Cash Flow ────────────────────────────────────────── */}
+        <section className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <Wallet className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold font-mono uppercase tracking-wider text-white">
-              Profit &amp; Deposits
+              Net Cash Flow
             </h2>
           </div>
-          <p className="text-xs font-mono text-muted-foreground -mt-4">
-            Log deposits and withdrawals, and see realised profit per trade.
+          <p className="text-xs font-mono text-muted-foreground mb-4">
+            Deposits, withdrawals and net cash flow on your trading account.
           </p>
 
           <CashflowManager />
-
-          <ProfitJournal trades={activeTrades} />
         </section>
       </div>
     </div>
